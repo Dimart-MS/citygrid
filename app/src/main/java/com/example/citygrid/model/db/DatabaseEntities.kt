@@ -9,20 +9,20 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class DbRol(
-    @SerialName("IdRol") val idRol: Int? = null,
-    @SerialName("Nombre") val nombre: String,
-    @SerialName("Descripcion") val descripcion: String? = null
+    @SerialName("idrol") val idRol: Int? = null,
+    @SerialName("nombre") val nombre: String,
+    @SerialName("descripcion") val descripcion: String? = null
 )
 
 @Serializable
 data class DbUsuario(
-    @SerialName("IdUsuario") val idUsuario: Int? = null,
-    @SerialName("IdRol") val idRol: Int,
-    @SerialName("Nombre") val nombre: String,
-    @SerialName("Correo") val correo: String,
-    @SerialName("PasswordHash") val passwordHash: String,
-    @SerialName("Estado") val estado: Boolean = true,
-    @SerialName("FechaRegistro") val fechaRegistro: String? = null
+    @SerialName("idusuario") val idUsuario: Int? = null,
+    @SerialName("idrol") val idRol: Int,
+    @SerialName("nombre") val nombre: String,
+    @SerialName("correo") val correo: String,
+    @SerialName("passwordhash") val passwordHash: String,
+    @SerialName("estado") val estado: Boolean = true,
+    @SerialName("fecharegistro") val fechaRegistro: String? = null
 )
 
 // =============================================================================
@@ -31,27 +31,27 @@ data class DbUsuario(
 
 @Serializable
 data class DbTipoResiduo(
-    @SerialName("IdTipoResiduo") val idTipoResiduo: Int? = null,
-    @SerialName("Nombre") val nombre: String
+    @SerialName("idtiporesiduo") val idTipoResiduo: Int? = null,
+    @SerialName("nombre") val nombre: String
 )
 
 @Serializable
 data class DbContenedor(
-    @SerialName("IdContenedor") val idContenedor: Int? = null,
-    @SerialName("IdTipoResiduo") val idTipoResiduo: Int,
-    @SerialName("Nombre") val nombre: String,
-    @SerialName("AlturaCM") val alturaCm: Double,
-    @SerialName("CapacidadLitros") val capacidadLitros: Double,
-    @SerialName("Estado") val estado: Boolean = true
+    @SerialName("idcontenedor") val idContenedor: Int? = null,
+    @SerialName("idtiporesiduo") val idTipoResiduo: Int,
+    @SerialName("nombre") val nombre: String,
+    @SerialName("alturacm") val alturaCm: Double,
+    @SerialName("capacidadlitros") val capacidadLitros: Double,
+    @SerialName("estado") val estado: Boolean = true
 )
 
 @Serializable
 data class DbLecturaResiduo(
-    @SerialName("IdLecturaResiduo") val idLecturaResiduo: Long? = null,
-    @SerialName("IdContenedor") val idContenedor: Int,
-    @SerialName("DistanciaCM") val distanciaCm: Double,
-    @SerialName("NivelLlenado") val nivelLlenado: Double,
-    @SerialName("FechaHora") val fechaHora: String? = null
+    @SerialName("idlecturaresiduo") val idLecturaResiduo: Long? = null,
+    @SerialName("idcontenedor") val idContenedor: Int,
+    @SerialName("distanciacm") val distanciaCm: Double,
+    @SerialName("nivellenado") val nivelLlenado: Double,
+    @SerialName("fechahora") val fechaHora: String? = null
 )
 
 // =============================================================================
@@ -60,34 +60,34 @@ data class DbLecturaResiduo(
 
 @Serializable
 data class DbTanque(
-    @SerialName("IdTanque") val idTanque: Int? = null,
-    @SerialName("Nombre") val nombre: String,
-    @SerialName("CapacidadLitros") val capacidadLitros: Double,
-    @SerialName("AlturaCM") val alturaCm: Double,
-    @SerialName("Estado") val estado: Boolean = true
+    @SerialName("idtanque") val idTanque: Int? = null,
+    @SerialName("nombre") val nombre: String,
+    @SerialName("capacidadlitros") val capacidadLitros: Double,
+    @SerialName("alturacm") val alturaCm: Double,
+    @SerialName("estado") val estado: Boolean = true
 )
 
 @Serializable
 data class DbBomba(
-    @SerialName("IdBomba") val idBomba: Int? = null,
-    @SerialName("Nombre") val nombre: String,
-    @SerialName("Estado") val estado: Boolean = true,
-    @SerialName("FechaActualizacion") val fechaActualizacion: String? = null
+    @SerialName("idbomba") val idBomba: Int? = null,
+    @SerialName("nombre") val nombre: String,
+    @SerialName("estado") val estado: Boolean = true,
+    @SerialName("fechaactualizacion") val fechaActualizacion: String? = null
 )
 
 @Serializable
 data class DbBombaTanque(
-    @SerialName("IdBomba") val idBomba: Int,
-    @SerialName("IdTanque") val idTanque: Int
+    @SerialName("idbomba") val idBomba: Int,
+    @SerialName("idtanque") val idTanque: Int
 )
 
 @Serializable
 data class DbLecturaAgua(
-    @SerialName("IdLecturaAgua") val idLecturaAgua: Long? = null,
-    @SerialName("IdTanque") val idTanque: Int,
-    @SerialName("DistanciaCM") val distanciaCm: Double,
-    @SerialName("NivelAgua") val nivelAgua: Double,
-    @SerialName("FechaHora") val fechaHora: String? = null
+    @SerialName("idlecturaagua") val idLecturaAgua: Long? = null,
+    @SerialName("idtanque") val idTanque: Int,
+    @SerialName("distanciacm") val distanciaCm: Double,
+    @SerialName("nivelagua") val nivelAgua: Double,
+    @SerialName("fechahora") val fechaHora: String? = null
 )
 
 // =============================================================================
@@ -96,18 +96,18 @@ data class DbLecturaAgua(
 
 @Serializable
 data class DbLuminaria(
-    @SerialName("IdLuminaria") val idLuminaria: Int? = null,
-    @SerialName("Nombre") val nombre: String,
-    @SerialName("Ubicacion") val ubicacion: String? = null,
-    @SerialName("Estado") val estado: Boolean = true
+    @SerialName("idluminaria") val idLuminaria: Int? = null,
+    @SerialName("nombre") val nombre: String,
+    @SerialName("ubicacion") val ubicacion: String? = null,
+    @SerialName("estado") val estado: Boolean = true
 )
 
 @Serializable
 data class DbLecturaLuminaria(
-    @SerialName("IdLecturaLuminaria") val idLecturaLuminaria: Long? = null,
-    @SerialName("IdLuminaria") val idLuminaria: Int,
-    @SerialName("ValorLDR") val valorLdr: Int,
-    @SerialName("FechaHora") val fechaHora: String? = null
+    @SerialName("idlecturaluminaria") val idLecturaLuminaria: Long? = null,
+    @SerialName("idluminaria") val idLuminaria: Int,
+    @SerialName("valorldr") val valorLdr: Int,
+    @SerialName("fechahora") val fechaHora: String? = null
 )
 
 // =============================================================================
@@ -116,55 +116,55 @@ data class DbLecturaLuminaria(
 
 @Serializable
 data class DbTipoDispositivo(
-    @SerialName("IdTipoDispositivo") val idTipoDispositivo: Int? = null,
-    @SerialName("Nombre") val nombre: String
+    @SerialName("idtipodispositivo") val idTipoDispositivo: Int? = null,
+    @SerialName("nombre") val nombre: String
 )
 
 @Serializable
 data class DbDispositivoIot(
-    @SerialName("IdDispositivo") val idDispositivo: Int? = null,
-    @SerialName("IdTipoDispositivo") val idTipoDispositivo: Int,
-    @SerialName("Nombre") val nombre: String,
-    @SerialName("EstadoConexion") val estadoConexion: String,
-    @SerialName("UltimaComunicacion") val ultimaComunicacion: String? = null
+    @SerialName("iddispositivo") val idDispositivo: Int? = null,
+    @SerialName("idtipodispositivo") val idTipoDispositivo: Int,
+    @SerialName("nombre") val nombre: String,
+    @SerialName("estadoconexion") val estadoConexion: String,
+    @SerialName("ultimacomunicacion") val ultimaComunicacion: String? = null
 )
 
 @Serializable
 data class DbSistema(
-    @SerialName("IdSistema") val idSistema: Int? = null,
-    @SerialName("Nombre") val nombre: String
+    @SerialName("idsistema") val idSistema: Int? = null,
+    @SerialName("nombre") val nombre: String
 )
 
 @Serializable
 data class DbTipoAlerta(
-    @SerialName("IdTipoAlerta") val idTipoAlerta: Int? = null,
-    @SerialName("Nombre") val nombre: String
+    @SerialName("idtipoalerta") val idTipoAlerta: Int? = null,
+    @SerialName("nombre") val nombre: String
 )
 
 @Serializable
 data class DbEstadoAlerta(
-    @SerialName("IdEstadoAlerta") val idEstadoAlerta: Int? = null,
-    @SerialName("Nombre") val nombre: String
+    @SerialName("idestadoalerta") val idEstadoAlerta: Int? = null,
+    @SerialName("nombre") val nombre: String
 )
 
 @Serializable
 data class DbAlerta(
-    @SerialName("IdAlerta") val idAlerta: Long? = null,
-    @SerialName("IdSistema") val idSistema: Int,
-    @SerialName("IdTipoAlerta") val idTipoAlerta: Int,
-    @SerialName("IdEstadoAlerta") val idEstadoAlerta: Int,
-    @SerialName("Descripcion") val descripcion: String,
-    @SerialName("FechaHora") val fechaHora: String? = null
+    @SerialName("idalerta") val idAlerta: Long? = null,
+    @SerialName("idsistema") val idSistema: Int,
+    @SerialName("idtipoalerta") val idTipoAlerta: Int,
+    @SerialName("idestadoalerta") val idEstadoAlerta: Int,
+    @SerialName("descripcion") val descripcion: String,
+    @SerialName("fechahora") val fechaHora: String? = null
 )
 
 @Serializable
 data class DbNotificacion(
-    @SerialName("IdNotificacion") val idNotificacion: Long? = null,
-    @SerialName("IdAlerta") val idAlerta: Long,
-    @SerialName("Titulo") val titulo: String,
-    @SerialName("Mensaje") val mensaje: String,
-    @SerialName("FechaEnvio") val fechaEnvio: String? = null,
-    @SerialName("Leida") val leida: Boolean = false
+    @SerialName("idnotificacion") val idNotificacion: Long? = null,
+    @SerialName("idalerta") val idAlerta: Long,
+    @SerialName("titulo") val titulo: String,
+    @SerialName("mensaje") val mensaje: String,
+    @SerialName("fechaenvio") val fechaEnvio: String? = null,
+    @SerialName("leida") val leida: Boolean = false
 )
 
 // =============================================================================
@@ -173,25 +173,25 @@ data class DbNotificacion(
 
 @Serializable
 data class DbComponente(
-    @SerialName("IdComponente") val idComponente: Int? = null,
-    @SerialName("IdSistema") val idSistema: Int,
-    @SerialName("Nombre") val nombre: String
+    @SerialName("idcomponente") val idComponente: Int? = null,
+    @SerialName("idsistema") val idSistema: Int,
+    @SerialName("nombre") val nombre: String
 )
 
 @Serializable
 data class DbMantenimiento(
-    @SerialName("IdMantenimiento") val idMantenimiento: Long? = null,
-    @SerialName("IdComponente") val idComponente: Int,
-    @SerialName("IdUsuario") val idUsuario: Int,
-    @SerialName("Descripcion") val descripcion: String,
-    @SerialName("FechaMantenimiento") val fechaMantenimiento: String
+    @SerialName("idmantenimiento") val idMantenimiento: Long? = null,
+    @SerialName("idcomponente") val idComponente: Int,
+    @SerialName("idusuario") val idUsuario: Int,
+    @SerialName("descripcion") val descripcion: String,
+    @SerialName("fechamantenimiento") val fechaMantenimiento: String
 )
 
 @Serializable
 data class DbBitacoraSistema(
-    @SerialName("IdBitacora") val idBitacora: Long? = null,
-    @SerialName("IdUsuario") val idUsuario: Int,
-    @SerialName("Accion") val accion: String,
-    @SerialName("Descripcion") val descripcion: String? = null,
-    @SerialName("FechaHora") val fechaHora: String? = null
+    @SerialName("idbitacora") val idBitacora: Long? = null,
+    @SerialName("idusuario") val idUsuario: Int,
+    @SerialName("accion") val accion: String,
+    @SerialName("descripcion") val descripcion: String? = null,
+    @SerialName("fechahora") val fechaHora: String? = null
 )

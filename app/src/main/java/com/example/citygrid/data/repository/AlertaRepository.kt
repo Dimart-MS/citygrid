@@ -58,11 +58,11 @@ object AlertaRepository {
                 .from("alertas")
                 .update(
                     {
-                        set("IdEstadoAlerta", 2)
+                        set("idestadoalerta", 2)
                     }
                 ) {
                     filter {
-                        eq("IdAlerta", idAlerta)
+                        eq("idalerta", idAlerta)
                     }
                 }
             Result.success(Unit)
