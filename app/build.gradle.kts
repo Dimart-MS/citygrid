@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 android {
@@ -86,9 +87,13 @@ dependencies {
 
     // Módulos principales que seguro usarás
     implementation("io.github.jan-tennert.supabase:postgrest-kt") // Base de datos
-    implementation("io.github.jan-tennert.supabase:gotrue-kt")    // Autenticación
+    implementation("io.github.jan-tennert.supabase:auth-kt")    // Autenticación
+    implementation("io.github.jan-tennert.supabase:realtime-kt")  // Realtime
     // implementation("io.github.jan-tennert.supabase:storage-kt") // Descomenta si usas Storage
 
     // Cliente HTTP necesario para que Supabase funcione en Android
-    implementation("io.ktor:ktor-client-android:3.0.0")
+    implementation("io.ktor:ktor-client-okhttp:3.0.0")
+
+    // Serialización (Para convertir JSON a objetos de Kotlin)
+    implementation(libs.kotlinx.serialization.json)
 }
