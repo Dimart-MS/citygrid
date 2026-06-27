@@ -8,10 +8,12 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.LightMode
+import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -170,7 +172,11 @@ fun IconoPersonalizado(name: String, tint: Color, modifier: Modifier = Modifier)
 }
 
 @Composable
-fun BloqueEncabezado(onNotificationClick: () -> Unit = {}) {
+fun BloqueEncabezado(
+    onLogoutClick: () -> Unit = {},
+    isDarkTheme: Boolean = false,
+    onThemeToggle: () -> Unit = {}
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -206,19 +212,36 @@ fun BloqueEncabezado(onNotificationClick: () -> Unit = {}) {
                 )
             }
             Spacer(modifier = Modifier.weight(1f))
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .background(Color.White, CircleShape)
-                    .clickable { onNotificationClick() },
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.Notifications,
-                    contentDescription = "Alertas",
-                    tint = Color(0xFF1E3A47),
-                    modifier = Modifier.size(24.dp)
-                )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .background(Color.White, CircleShape)
+                        .clickable { onThemeToggle() },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = if (isDarkTheme) Icons.Default.LightMode else Icons.Default.DarkMode,
+                        contentDescription = if (isDarkTheme) "Tema claro" else "Tema oscuro",
+                        tint = Color(0xFF1E3A47),
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .background(Color.White, CircleShape)
+                        .clickable { onLogoutClick() },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.Logout,
+                        contentDescription = "Cerrar sesión",
+                        tint = Color(0xFF1E3A47),
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
             }
         }
     }
@@ -236,9 +259,10 @@ fun BarraNavegacionInferiorCompartida(navController: NavController, currentRoute
     Card(
         modifier = Modifier
             .fillMaxWidth()
+            .navigationBarsPadding()
             .height(80.dp),
         shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
     ) {
         Row(
@@ -253,7 +277,9 @@ fun BarraNavegacionInferiorCompartida(navController: NavController, currentRoute
                     label = item.title,
                     isActive = isActive,
                     onClick = {
-                        if (!isActive) {
+                        if (item.route == Screen.Dashboard.route) {
+                            navController.popBackStack(Screen.Dashboard.route, inclusive = false)
+                        } else {
                             navController.navigate(item.route) {
                                 popUpTo(Screen.Dashboard.route) {
                                     saveState = true
@@ -271,7 +297,7 @@ fun BarraNavegacionInferiorCompartida(navController: NavController, currentRoute
 
 @Composable
 fun ElementoNavegacionInferiorCompartido(icon: String, label: String, isActive: Boolean, onClick: () -> Unit) {
-    val tintColor = if (isActive) Color(0xFF00A8CC) else Color(0xFF718096)
+    val tintColor = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
@@ -319,11 +345,11 @@ fun ElementoNavegacionInferiorCompartido(icon: String, label: String, isActive: 
         )
         if (isActive) {
             Spacer(modifier = Modifier.height(2.dp))
-            Box(
-                modifier = Modifier
-                    .size(4.dp)
-                    .background(Color(0xFF00A8CC), CircleShape)
-            )
+                Box(
+                    modifier = Modifier
+                        .size(4.dp)
+                        .background(MaterialTheme.colorScheme.primary, CircleShape)
+                )
         } else {
             Spacer(modifier = Modifier.height(6.dp))
         }

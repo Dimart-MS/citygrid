@@ -8,9 +8,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.example.citygrid.data.SessionManager
 import com.example.citygrid.navigation.NavGraph
 import com.example.citygrid.navigation.Screen
 import com.example.citygrid.ui.components.BarraNavegacionInferiorCompartida
@@ -21,36 +25,48 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        val sessionManager = SessionManager(this)
+
         setContent {
             val navController = rememberNavController()
             val navBackStackEntry by navController.currentBackStackEntryAsState()
             val currentRoute = navBackStackEntry?.destination?.route
+            val onLogin = currentRoute == Screen.Login.route
+            var isDarkTheme by remember { mutableStateOf(sessionManager.isTemaOscuro()) }
 
-            CityGridTheme {
+            CityGridTheme(darkTheme = isDarkTheme) {
                 Scaffold(
                     modifier = Modifier.fillMaxSize(),
                     topBar = {
-                        // Ocultar encabezado en pantalla de Login si fuera necesario
-                        if (currentRoute != Screen.Login.route) {
-                            BloqueEncabezado(onNotificationClick = {
-                                navController.navigate(Screen.Alertas.route) {
-                                    popUpTo(Screen.Dashboard.route) {
-                                        saveState = true
+                        if (!onLogin) {
+                            BloqueEncabezado(
+                                onLogoutClick = {
+                                    sessionManager.cerrarSesion()
+                                    navController.navigate(Screen.Login.route) {
+                                        popUpTo(0) { inclusive = true }
                                     }
-                                    launchSingleTop = true
-                                    restoreState = true
+                                },
+                                isDarkTheme = isDarkTheme,
+                                onThemeToggle = {
+                                    isDarkTheme = !isDarkTheme
+                                    sessionManager.setTemaOscuro(isDarkTheme)
                                 }
-                            })
+                            )
                         }
                     },
                     bottomBar = {
-                        if (currentRoute != Screen.Login.route) {
-                            BarraNavegacionInferiorCompartida(navController = navController, currentRoute = currentRoute)
+                        if (!onLogin) {
+                            BarraNavegacionInferiorCompartida(
+                                navController = navController,
+                                currentRoute = currentRoute
+                            )
                         }
                     }
                 ) { innerPadding ->
                     NavGraph(
                         navController = navController,
+                        sessionManager = sessionManager,
                         modifier = Modifier.padding(innerPadding)
                     )
                 }

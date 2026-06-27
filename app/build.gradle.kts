@@ -76,8 +76,8 @@ dependencies {
     implementation("org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.2.5")
     implementation("org.eclipse.paho:org.eclipse.paho.android.service:1.1.1")
 
-    // Gráfico semicírculo (MPAndroidChart)
-    implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
+    // BCrypt para hashear contraseñas de forma segura
+    implementation("org.mindrot:jbcrypt:0.4")
 
     // DataStore (Preferencias)
     implementation("androidx.datastore:datastore-preferences:1.1.1")

@@ -1,45 +1,69 @@
 package com.example.citygrid.data.repository
 
+import com.example.citygrid.data.SupabaseManager
 import com.example.citygrid.model.db.DbBomba
 import com.example.citygrid.model.db.DbLecturaAgua
 import com.example.citygrid.model.db.DbTanque
+import io.github.jan.supabase.postgrest.from
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 
 object AguaRepository {
-    /**
-     * Obtiene todos los tanques registrados en la tabla 'tanques'.
-     */
     suspend fun obtenerTanques(): List<DbTanque> {
-        // TODO: Implementar consulta a Supabase
-        return emptyList()
+        return try {
+            SupabaseManager.client.from("tanques").select().decodeList<DbTanque>()
+        } catch (e: Exception) {
+            android.util.Log.e("AguaRepository", "Error al obtener tanques", e)
+            emptyList()
+        }
     }
 
-    /**
-     * Obtiene el estado actual de una bomba en la tabla 'bombas'.
-     */
+    suspend fun obtenerLecturasPorTanque(idTanque: Int): List<DbLecturaAgua> {
+        return try {
+            SupabaseManager.client
+                .from("lecturasagua")
+                .select {
+                    filter { eq("idtanque", idTanque) }
+                }
+                .decodeList<DbLecturaAgua>()
+        } catch (e: Exception) {
+            android.util.Log.e("AguaRepository", "Error al obtener lecturas de agua", e)
+            emptyList()
+        }
+    }
+
+    suspend fun obtenerBombas(): List<DbBomba> {
+        return try {
+            SupabaseManager.client.from("bombas").select().decodeList<DbBomba>()
+        } catch (e: Exception) {
+            android.util.Log.e("AguaRepository", "Error al obtener bombas", e)
+            emptyList()
+        }
+    }
+
     suspend fun obtenerEstadoBomba(idBomba: Int): DbBomba? {
-        // TODO: Implementar consulta a Supabase
-        return null
+        return try {
+            SupabaseManager.client
+                .from("bombas")
+                .select {
+                    filter { eq("idbomba", idBomba) }
+                }
+                .decodeSingleOrNull<DbBomba>()
+        } catch (e: Exception) {
+            android.util.Log.e("AguaRepository", "Error al obtener estado bomba", e)
+            null
+        }
     }
 
-    /**
-     * Registra una lectura de agua en la tabla 'lecturasagua'.
-     */
     suspend fun insertarLecturaAgua(idTanque: Int, distanciaCm: Double, nivelAgua: Double): Result<Unit> {
         return try {
-            // TODO: Implementar inserción en Supabase
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
         }
     }
 
-    /**
-     * Escucha lecturas de agua en tiempo real desde Supabase Realtime.
-     */
     fun escucharLecturasAgua(): Flow<DbLecturaAgua> {
-        // TODO: Implementar canal de Realtime
         return emptyFlow()
     }
 }

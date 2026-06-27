@@ -19,3 +19,8 @@ val SurfaceCard         = Color(0xFFFFFFFF)
 val TextPrimary         = Color(0xFF1A1A1A)
 val TextSecondary       = Color(0xFF666666)
 val DividerColor        = Color(0xFFE0E0E0)
+
+// ─── Tema oscuro ─────────────────────────────────────────────────────────
+val BackgroundDark      = Color(0xFF1A1A1A)
+val SurfaceDark         = Color(0xFF2A2A2A)
+val SurfaceVariantDark  = Color(0xFF3A3A3A)
