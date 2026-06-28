@@ -40,6 +40,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.citygrid.data.SessionManager
@@ -82,6 +83,19 @@ fun DashboardScreen(
     val ldrLux by viewModel.ldrLux.collectAsState()
     val alertas by viewModel.alertas.collectAsState()
     val cargando by viewModel.cargando.collectAsState()
+    val ultimaActualizacion by viewModel.ultimaActualizacion.collectAsState()
+
+    val tiempoTexto = remember(ultimaActualizacion) {
+        if (ultimaActualizacion == 0L) "Cargando..."
+        else {
+            val minutos = (System.currentTimeMillis() - ultimaActualizacion) / 60000
+            when {
+                minutos < 1 -> "Recién actualizado"
+                minutos == 1L -> "Última actualización hace 1 minuto"
+                else -> "Última actualización hace $minutos minutos"
+            }
+        }
+    }
 
     val alertasActivas = alertas.count { !it.atendida }
     val alertasCriticas = alertas.count { it.tipo == TipoAlerta.CRITICO && !it.atendida }
@@ -90,8 +104,8 @@ fun DashboardScreen(
         alertas.sortedByDescending { it.timestamp }.take(5)
     }
 
-    val fechaActual = SimpleDateFormat("dd/MM/yyyy - HH:mm", Locale.getDefault())
-        .format(Date())
+    val fechaActual = SimpleDateFormat("dd / MM / yyyy · HH:mm", Locale.getDefault())
+        .format(Date()) + " hrs"
 
     Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         LazyColumn(
@@ -130,7 +144,7 @@ fun DashboardScreen(
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp),
                     colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer
+                        containerColor = Color(0xFF284553)
                     ),
                     shape = RoundedCornerShape(20.dp)
                 ) {
@@ -138,26 +152,40 @@ fun DashboardScreen(
                         Text(
                             text = "Estado General del Sistema",
                             style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+                            color = Color(0xFF94A3B8)
                         )
                         Text(
                             text = fechaActual,
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                            color = Color.White
                         )
                         Spacer(Modifier.height(8.dp))
-                        Surface(
-                            shape = RoundedCornerShape(20.dp),
-                            color = StatusYellow
+                        Box(
+                            modifier = Modifier
+                                .background(Color(0xFF1E3A47), RoundedCornerShape(12.dp))
+                                .padding(horizontal = 10.dp, vertical = 4.dp)
                         ) {
-                            Text(
-                                text = "⚠ $alertasActivas Alertas pendientes de revisión",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = Color.Black,
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-                            )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(8.dp)
+                                        .background(StatusGreen, CircleShape)
+                                )
+                                Spacer(Modifier.width(6.dp))
+                                Text(
+                                    text = "$alertasActivas Alertas pendientes de revisión",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = Color.White
+                                )
+                            }
                         }
+                        Spacer(Modifier.height(6.dp))
+                        Text(
+                            text = tiempoTexto,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color(0xFF64748B)
+                        )
                     }
                 }
             }
@@ -257,98 +285,128 @@ fun DashboardScreen(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        // Agua
                         Card(
                             modifier = Modifier.weight(1f),
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surface
-                            )
+                            colors = CardDefaults.cardColors(containerColor = Color.White),
+                            shape = RoundedCornerShape(12.dp),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                         ) {
-                            Column(modifier = Modifier.padding(12.dp)) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(modifier = Modifier.padding(16.dp)) {
+                                Column {
                                     Icon(
                                         Icons.Filled.WaterDrop,
                                         contentDescription = null,
-                                        tint = StatusBlue,
-                                        modifier = Modifier.size(20.dp)
+                                        tint = Color(0xFF26A69A),
+                                        modifier = Modifier.size(24.dp)
                                     )
-                                    Spacer(Modifier.width(4.dp))
-                                    StatusBadge("NORMAL")
-                                }
-                                Spacer(Modifier.height(4.dp))
-                                Text(
-                                    text = "Agua",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Text(
-                                    text = "$nivelAgua%",
-                                    style = MaterialTheme.typography.headlineMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = StatusGreen
-                                )
-                                Text(
-                                    text = "Nivel del tanque",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Text(
-                                    text = if (bombaActiva) "Bomba: Activada" else "Bomba: Apagada",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-                        // Alumbrado
-                        Card(
-                            modifier = Modifier.weight(1f),
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surface
-                            )
-                        ) {
-                            Column(modifier = Modifier.padding(12.dp)) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(
-                                        Icons.Filled.WbSunny,
-                                        contentDescription = null,
-                                        tint = StatusYellow,
-                                        modifier = Modifier.size(20.dp)
+                                    Spacer(Modifier.height(8.dp))
+                                    Text(
+                                        text = "Agua",
+                                        color = Color(0xFF424242),
+                                        fontSize = 13.sp
                                     )
-                                    Spacer(Modifier.width(4.dp))
-                                    Surface(
-                                        shape = RoundedCornerShape(12.dp),
-                                        color = CityGridGreen
-                                    ) {
+                                    Spacer(Modifier.height(8.dp))
+                                    Text(
+                                        text = "$nivelAgua%",
+                                        color = Color(0xFF26A69A),
+                                        fontSize = 28.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Spacer(Modifier.height(8.dp))
+                                    Text(
+                                        text = "Nivel del tanque",
+                                        color = Color(0xFF9E9E9E),
+                                        fontSize = 11.sp
+                                    )
+                                    Spacer(Modifier.height(8.dp))
+                                    Row(modifier = Modifier.fillMaxWidth()) {
                                         Text(
-                                            text = "AUTO",
-                                            style = MaterialTheme.typography.labelSmall,
-                                            color = Color.White,
-                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                            text = "Bomba",
+                                            color = Color(0xFF9E9E9E),
+                                            fontSize = 12.sp
+                                        )
+                                        Spacer(Modifier.weight(1f))
+                                        Text(
+                                            text = if (bombaActiva) "Activada" else "Apagada",
+                                            color = Color(0xFF26A69A),
+                                            fontSize = 12.sp
                                         )
                                     }
                                 }
-                                Spacer(Modifier.height(4.dp))
-                                Text(
-                                    text = "Alumbrado",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Text(
-                                    text = if (alumbradoOn) "ON" else "OFF",
-                                    style = MaterialTheme.typography.headlineMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = if (alumbradoOn) StatusGreen else MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Text(
-                                    text = "Modo automático",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Text(
-                                    text = "Sensor LDR: $ldrLux lux",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
+                                Box(
+                                    modifier = Modifier
+                                        .align(Alignment.TopEnd)
+                                        .background(Color(0xFFE8F5E9), RoundedCornerShape(20.dp))
+                                        .padding(horizontal = 10.dp, vertical = 2.dp)
+                                ) {
+                                    Text(
+                                        text = "NORMAL",
+                                        color = Color(0xFF2E7D32),
+                                        fontSize = 11.sp
+                                    )
+                                }
+                            }
+                        }
+                        Card(
+                            modifier = Modifier.weight(1f),
+                            colors = CardDefaults.cardColors(containerColor = Color.White),
+                            shape = RoundedCornerShape(12.dp),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                        ) {
+                            Box(modifier = Modifier.padding(16.dp)) {
+                                Column {
+                                    Icon(
+                                        Icons.Filled.WbSunny,
+                                        contentDescription = null,
+                                        tint = Color(0xFFFFA726),
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                    Spacer(Modifier.height(8.dp))
+                                    Text(
+                                        text = "Alumbrado",
+                                        color = Color(0xFF424242),
+                                        fontSize = 13.sp
+                                    )
+                                    Spacer(Modifier.height(8.dp))
+                                    Text(
+                                        text = if (alumbradoOn) "ON" else "OFF",
+                                        color = Color(0xFFFFA726),
+                                        fontSize = 28.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Spacer(Modifier.height(8.dp))
+                                    Text(
+                                        text = "Modo automático",
+                                        color = Color(0xFF9E9E9E),
+                                        fontSize = 11.sp
+                                    )
+                                    Spacer(Modifier.height(8.dp))
+                                    Row(modifier = Modifier.fillMaxWidth()) {
+                                        Text(
+                                            text = "Sensor LDR",
+                                            color = Color(0xFF9E9E9E),
+                                            fontSize = 12.sp
+                                        )
+                                        Spacer(Modifier.weight(1f))
+                                        Text(
+                                            text = "$ldrLux lux",
+                                            color = Color(0xFF26A69A),
+                                            fontSize = 12.sp
+                                        )
+                                    }
+                                }
+                                Box(
+                                    modifier = Modifier
+                                        .align(Alignment.TopEnd)
+                                        .background(Color(0xFFE8F5E9), RoundedCornerShape(20.dp))
+                                        .padding(horizontal = 10.dp, vertical = 2.dp)
+                                ) {
+                                    Text(
+                                        text = "AUTO",
+                                        color = Color(0xFF2E7D32),
+                                        fontSize = 11.sp
+                                    )
+                                }
                             }
                         }
                     }

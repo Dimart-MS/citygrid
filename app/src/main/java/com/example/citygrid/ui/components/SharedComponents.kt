@@ -11,8 +11,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.LightMode
-import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -172,11 +170,7 @@ fun IconoPersonalizado(name: String, tint: Color, modifier: Modifier = Modifier)
 }
 
 @Composable
-fun BloqueEncabezado(
-    onLogoutClick: () -> Unit = {},
-    isDarkTheme: Boolean = false,
-    onThemeToggle: () -> Unit = {}
-) {
+fun BloqueEncabezado(onLogoutClick: () -> Unit = {}) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -212,36 +206,19 @@ fun BloqueEncabezado(
                 )
             }
             Spacer(modifier = Modifier.weight(1f))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .background(Color.White, CircleShape)
-                        .clickable { onThemeToggle() },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = if (isDarkTheme) Icons.Default.LightMode else Icons.Default.DarkMode,
-                        contentDescription = if (isDarkTheme) "Tema claro" else "Tema oscuro",
-                        tint = Color(0xFF1E3A47),
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
-                Spacer(modifier = Modifier.width(8.dp))
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .background(Color.White, CircleShape)
-                        .clickable { onLogoutClick() },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.Logout,
-                        contentDescription = "Cerrar sesión",
-                        tint = Color(0xFF1E3A47),
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .background(Color.White, CircleShape)
+                    .clickable { onLogoutClick() },
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.Logout,
+                    contentDescription = "Cerrar sesión",
+                    tint = Color(0xFF1E3A47),
+                    modifier = Modifier.size(24.dp)
+                )
             }
         }
     }

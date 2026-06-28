@@ -8,9 +8,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
@@ -33,9 +30,8 @@ class MainActivity : ComponentActivity() {
             val navBackStackEntry by navController.currentBackStackEntryAsState()
             val currentRoute = navBackStackEntry?.destination?.route
             val onLogin = currentRoute == Screen.Login.route
-            var isDarkTheme by remember { mutableStateOf(sessionManager.isTemaOscuro()) }
 
-            CityGridTheme(darkTheme = isDarkTheme) {
+            CityGridTheme(darkTheme = false) {
                 Scaffold(
                     modifier = Modifier.fillMaxSize(),
                     topBar = {
@@ -46,11 +42,6 @@ class MainActivity : ComponentActivity() {
                                     navController.navigate(Screen.Login.route) {
                                         popUpTo(0) { inclusive = true }
                                     }
-                                },
-                                isDarkTheme = isDarkTheme,
-                                onThemeToggle = {
-                                    isDarkTheme = !isDarkTheme
-                                    sessionManager.setTemaOscuro(isDarkTheme)
                                 }
                             )
                         }

@@ -10,6 +10,7 @@ import com.example.citygrid.model.Alerta
 import com.example.citygrid.model.TipoAlerta
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
@@ -39,6 +40,9 @@ class DashboardViewModel : ViewModel() {
     private val _cargando = MutableStateFlow(true)
     val cargando: StateFlow<Boolean> = _cargando.asStateFlow()
 
+    private val _ultimaActualizacion = MutableStateFlow(0L)
+    val ultimaActualizacion: StateFlow<Long> = _ultimaActualizacion.asStateFlow()
+
     init {
         cargarDatos()
     }
@@ -46,10 +50,13 @@ class DashboardViewModel : ViewModel() {
     fun cargarDatos() {
         viewModelScope.launch {
             _cargando.value = true
-            launch { cargarResiduos() }
-            launch { cargarAgua() }
-            launch { cargarAlumbrado() }
-            launch { cargarAlertas() }
+            coroutineScope {
+                launch { cargarResiduos() }
+                launch { cargarAgua() }
+                launch { cargarAlumbrado() }
+                launch { cargarAlertas() }
+            }
+            _ultimaActualizacion.value = System.currentTimeMillis()
             _cargando.value = false
         }
     }
