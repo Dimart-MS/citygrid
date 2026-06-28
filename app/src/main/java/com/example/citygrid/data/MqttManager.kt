@@ -13,7 +13,17 @@ import org.eclipse.paho.client.mqttv3.MqttConnectOptions
 object MqttManager {
     val residuosFlow: StateFlow<ResiduosState>   = MutableStateFlow(ResiduosState())
     val aguaFlow: StateFlow<AguaState>           = MutableStateFlow(AguaState())
-    val alumbradoFlow: StateFlow<AlumbradoState> = MutableStateFlow(AlumbradoState())
+    val alumbradoFlow: MutableStateFlow<AlumbradoState> = MutableStateFlow(
+        AlumbradoState(
+            estadoOn = true,
+            condicionNoche = true,
+            ldrLux = 45, // Pocos luxes = de noche
+            luminariasActivas = 12,
+            modo = "AUTO",
+            ultimaActualizacion = System.currentTimeMillis(),
+            conectado = true
+        )
+    )
     val alertasFlow: StateFlow<List<Alerta>>     = MutableStateFlow(emptyList())
 
     val mqttOptions = MqttConnectOptions().apply {
