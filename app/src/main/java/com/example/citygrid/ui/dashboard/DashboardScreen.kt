@@ -19,6 +19,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.WaterDrop
 import androidx.compose.material.icons.filled.WbSunny
@@ -183,6 +184,12 @@ fun DashboardScreen(
                         icon = Icons.Filled.WbSunny,
                         label = "Alumbrado",
                         onClick = { navController.navigate(Screen.Alumbrado.route) }
+                    )
+                    // Boton para mantenimiento
+                    AccesoRapidoItem(
+                        icon = Icons.Filled.Build,
+                        label = "Mantenimiento",
+                        onClick = { navController.navigate(Screen.Mantenimiento.route) }
                     )
                 }
             }

@@ -184,7 +184,16 @@ data class DbMantenimiento(
     @SerialName("idcomponente") val idComponente: Int,
     @SerialName("idusuario") val idUsuario: Int,
     @SerialName("descripcion") val descripcion: String,
-    @SerialName("fechamantenimiento") val fechaMantenimiento: String
+    @SerialName("fechamantenimiento") val fechaMantenimiento: String,
+    @SerialName("tipo") val tipo: String = "PREVENTIVO" // Nuevo campo
+)
+@Serializable
+data class DbMantenimientoInsert(
+    @SerialName("idcomponente") val idComponente: Int,
+    @SerialName("idusuario") val idUsuario: Int,
+    @SerialName("descripcion") val descripcion: String,
+    @SerialName("fechamantenimiento") val fechaMantenimiento: String,
+    @SerialName("tipo") val tipo: String
 )
 
 @Serializable

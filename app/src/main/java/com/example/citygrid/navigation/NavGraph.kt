@@ -11,6 +11,7 @@ import com.example.citygrid.ui.alertas.AlertasScreen
 import com.example.citygrid.ui.alumbrado.AlumbradoScreen
 import com.example.citygrid.ui.dashboard.DashboardScreen
 import com.example.citygrid.ui.login.LoginScreen
+import com.example.citygrid.ui.mantenimiento.MantenimientoScreen
 import com.example.citygrid.ui.residuos.ResiduosScreen
 
 /**
@@ -64,6 +65,9 @@ fun NavGraph(
         }
         composable(Screen.Alertas.route) {
             AlertasScreen()
+        }
+        composable(Screen.Mantenimiento.route) {
+            MantenimientoScreen()
         }
     }
 }
