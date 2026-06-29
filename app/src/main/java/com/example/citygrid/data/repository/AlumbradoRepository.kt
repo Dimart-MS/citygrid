@@ -4,6 +4,9 @@ import com.example.citygrid.data.SupabaseManager
 import com.example.citygrid.model.db.DbLecturaLuminaria
 import com.example.citygrid.model.db.DbLuminaria
 import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.realtime.selectAsFlow
+import io.github.jan.supabase.annotations.SupabaseExperimental
+import kotlinx.coroutines.flow.Flow
 
 object AlumbradoRepository {
     suspend fun obtenerLuminarias(): List<DbLuminaria> {
@@ -27,5 +30,27 @@ object AlumbradoRepository {
             android.util.Log.e("AlumbradoRepository", "Error al obtener lecturas luminaria", e)
             emptyList()
         }
+    }
+
+    suspend fun insertarLecturaLuminaria(idLuminaria: Int, valorLdr: Int): Result<Unit> {
+        return try {
+            val lectura = DbLecturaLuminaria(
+                idLuminaria = idLuminaria,
+                valorLdr = valorLdr,
+                fechaHora = java.time.OffsetDateTime.now().toString()
+            )
+            SupabaseManager.client.from("lecturasluminaria").insert(lectura)
+            Result.success(Unit)
+        } catch (e: Exception) {
+            android.util.Log.e("AlumbradoRepository", "Error al insertar lectura de alumbrado", e)
+            Result.failure(e)
+        }
+    }
+
+    @OptIn(SupabaseExperimental::class)
+    fun escucharLecturasLuminarias(): Flow<List<DbLecturaLuminaria>> {
+        return SupabaseManager.client
+            .from("lecturasluminaria")
+            .selectAsFlow(DbLecturaLuminaria::idLecturaLuminaria)
     }
 }

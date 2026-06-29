@@ -72,6 +72,21 @@ object AlertaRepository {
     }
 
     /**
+     * Inserta una nueva alerta en la tabla 'alertas' de Supabase.
+     */
+    suspend fun insertarAlerta(dbAlerta: DbAlerta): Result<Unit> {
+        return try {
+            SupabaseManager.client
+                .from("alertas")
+                .insert(dbAlerta)
+            Result.success(Unit)
+        } catch (e: Exception) {
+            android.util.Log.e("AlertaRepository", "Error al insertar alerta", e)
+            Result.failure(e)
+        }
+    }
+
+    /**
      * Escucha nuevas notificaciones en tiempo real desde Supabase Realtime.
      */
     fun escucharNotificacionesRealtime(): Flow<List<DbNotificacion>> {

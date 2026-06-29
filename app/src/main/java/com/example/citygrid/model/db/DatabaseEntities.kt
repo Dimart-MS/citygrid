@@ -50,7 +50,7 @@ data class DbLecturaResiduo(
     @SerialName("idlecturaresiduo") val idLecturaResiduo: Long? = null,
     @SerialName("idcontenedor") val idContenedor: Int,
     @SerialName("distanciacm") val distanciaCm: Double,
-    @SerialName("nivellenado") val nivelLlenado: Double,
+    @SerialName("nivelllenado") val nivelLlenado: Double,
     @SerialName("fechahora") val fechaHora: String? = null
 )
 

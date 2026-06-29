@@ -16,7 +16,10 @@ import com.example.citygrid.navigation.NavGraph
 import com.example.citygrid.navigation.Screen
 import com.example.citygrid.ui.components.BarraNavegacionInferiorCompartida
 import com.example.citygrid.ui.components.BloqueEncabezado
+import android.os.Build
 import com.example.citygrid.ui.theme.CityGridTheme
+import com.example.citygrid.utils.NotificationHelper
+import com.example.citygrid.data.MqttManager
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -24,6 +27,17 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         val sessionManager = SessionManager(this)
+
+        // Inicializar canal de notificaciones y solicitar permiso en Android 13+ (Requisito del examen)
+        NotificationHelper.createNotificationChannel(this)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 101)
+            }
+        }
+
+        // Conectar cliente MQTT en segundo plano al iniciar
+        MqttManager.connect(applicationContext)
 
         setContent {
             val navController = rememberNavController()

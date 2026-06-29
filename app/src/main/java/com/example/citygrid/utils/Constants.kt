@@ -9,14 +9,17 @@ object Constants {
     const val TOPIC_ALERTAS      = "citygrid/alertas"
     const val TOPIC_CONTROL      = "citygrid/control"
 
+    // Control bidireccional (reservado para implementación futura)
+    const val TOPIC_CTRL_BOMBA   = "control-bomba"
+
     // Supabase Configuration
     const val SUPABASE_URL       = "https://xdwccycazmjbizwnljxo.supabase.co"
     const val SUPABASE_KEY       = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhkd2NjeWNhem1qYml6d25sanhvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0Nzk1OTgsImV4cCI6MjA5ODA1NTU5OH0.wd6KGYO_V_xwDlRk4pPMPuia0Un19XkFHXSEEtCKcUs"
 
     // MQTT HiveMQ Cloud Configuration
-    const val MQTT_BROKER_URL    = "ssl://TU_CLUSTER.s1.eu.hivemq.cloud:8883"
-    const val MQTT_USER          = "tu_usuario"
-    const val MQTT_PASSWORD      = "tu_password"
+    const val MQTT_BROKER_URL    = "ssl://7616ccef7e334086bf74b6bb92340be3.s1.eu.hivemq.cloud:8883"
+    const val MQTT_USER          = "CityGrid"
+    const val MQTT_PASSWORD      = "CityGridPasswordSec1"
     const val CLIENT_ID          = "CityGrid_Android_Client"
 
     // Umbrales

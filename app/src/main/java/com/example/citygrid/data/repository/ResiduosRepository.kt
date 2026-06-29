@@ -33,10 +33,23 @@ object ResiduosRepository {
 
     suspend fun insertarLectura(idContenedor: Int, distanciaCm: Double, nivelLlenado: Double): Result<Unit> {
         return try {
+            val lectura = DbLecturaResiduo(
+                idContenedor = idContenedor,
+                distanciaCm = distanciaCm,
+                nivelLlenado = nivelLlenado,
+                fechaHora = java.time.OffsetDateTime.now().toString()
+            )
+            SupabaseManager.client.from("lecturasresiduos").insert(lectura)
             Result.success(Unit)
         } catch (e: Exception) {
+            android.util.Log.e("ResiduosRepository", "Error al insertar lectura de residuo", e)
             Result.failure(e)
         }
+    }
+
+    suspend fun obtenerUltimaLectura(idContenedor: Int): DbLecturaResiduo? {
+        val lecturas = obtenerLecturasPorContenedor(idContenedor)
+        return lecturas.maxByOrNull { it.idLecturaResiduo ?: 0L }
     }
 
     fun escucharLecturasResiduos(): Flow<DbLecturaResiduo> {

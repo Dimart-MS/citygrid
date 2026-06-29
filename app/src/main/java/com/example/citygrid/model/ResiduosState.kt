@@ -9,5 +9,6 @@ data class ContenedorData(
 
 data class ResiduosState(
     val contenedores: List<ContenedorData> = emptyList(),
-    val conectado: Boolean = false
+    val conectado: Boolean = false,
+    val ultimoMensajeTimestamp: Long = 0L
 )

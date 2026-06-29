@@ -55,7 +55,13 @@ fun NavGraph(
         }
 
         composable(Screen.Residuos.route) {
-            ResiduosScreen()
+            ResiduosScreen(
+                onNavigateToAlerts = {
+                    navController.navigate(Screen.Alertas.route) {
+                        launchSingleTop = true
+                    }
+                }
+            )
         }
         composable(Screen.Agua.route) {
             AguaScreen()

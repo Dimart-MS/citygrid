@@ -5,8 +5,9 @@ import com.example.citygrid.model.db.DbBomba
 import com.example.citygrid.model.db.DbLecturaAgua
 import com.example.citygrid.model.db.DbTanque
 import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.realtime.selectAsFlow
+import io.github.jan.supabase.annotations.SupabaseExperimental
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.emptyFlow
 
 object AguaRepository {
     suspend fun obtenerTanques(): List<DbTanque> {
@@ -57,13 +58,24 @@ object AguaRepository {
 
     suspend fun insertarLecturaAgua(idTanque: Int, distanciaCm: Double, nivelAgua: Double): Result<Unit> {
         return try {
+            val lectura = DbLecturaAgua(
+                idTanque = idTanque,
+                distanciaCm = distanciaCm,
+                nivelAgua = nivelAgua,
+                fechaHora = java.time.OffsetDateTime.now().toString()
+            )
+            SupabaseManager.client.from("lecturasagua").insert(lectura)
             Result.success(Unit)
         } catch (e: Exception) {
+            android.util.Log.e("AguaRepository", "Error al insertar lectura de agua", e)
             Result.failure(e)
         }
     }
 
-    fun escucharLecturasAgua(): Flow<DbLecturaAgua> {
-        return emptyFlow()
+    @OptIn(SupabaseExperimental::class)
+    fun escucharLecturasAgua(): Flow<List<DbLecturaAgua>> {
+        return SupabaseManager.client
+            .from("lecturasagua")
+            .selectAsFlow(DbLecturaAgua::idLecturaAgua)
     }
 }
