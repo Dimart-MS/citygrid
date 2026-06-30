@@ -216,7 +216,10 @@ fun AguaScreen(viewModel: AguaViewModel = viewModel()) {
                             onCheckedChange = { viewModel.activarBombaManual(it) },
                             colors = SwitchDefaults.colors(
                                 checkedThumbColor = Color.White,
-                                checkedTrackColor = ColorPrincipal
+                                checkedTrackColor = ColorPrincipal,
+                                uncheckedThumbColor = Color.White,
+                                uncheckedTrackColor = Color.LightGray,
+                                uncheckedBorderColor = Color.Transparent
                             )
                         )
                     }
@@ -407,6 +410,9 @@ fun TarjetaHistorialAgua(lectura: DbLecturaAgua) {
     }
 }
 
-private fun formatTimestamp(timestamp: Long): String = java.text.SimpleDateFormat("dd/MM/yyyy - HH:mm", java.util.Locale.getDefault()).format(java.util.Date(timestamp))
+private fun formatTimestamp(timestamp: Long): String {
+    if (timestamp == 0L) return "Sin datos"
+    return java.text.SimpleDateFormat("dd/MM/yyyy - HH:mm", java.util.Locale.getDefault()).format(java.util.Date(timestamp))
+}
 private fun formatearFechaBd(fechaStr: String?): String = try { OffsetDateTime.parse(fechaStr).format(DateTimeFormatter.ofPattern("HH:mm")) } catch (e: Exception) { "--:--" }
 private fun formatearFechaBdCompleta(fechaStr: String?): String = try { OffsetDateTime.parse(fechaStr).format(DateTimeFormatter.ofPattern("dd MMM, HH:mm")) } catch (e: Exception) { fechaStr ?: "" }

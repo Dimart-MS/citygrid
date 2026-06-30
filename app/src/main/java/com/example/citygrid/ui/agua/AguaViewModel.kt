@@ -42,5 +42,14 @@ class AguaViewModel : ViewModel() {
     fun activarBombaManual(encender: Boolean) {
         val payload = if (encender) "1" else "0"
         MqttManager.publish(Constants.TOPIC_CTRL_BOMBA, payload)
+        
+        // Actualización optimista inmediata para evitar snapback en la UI
+        val currentState = MqttManager.aguaFlow.value
+        MqttManager.updateAguaState(
+            currentState.copy(
+                bombaActiva = encender,
+                ultimaActualizacion = System.currentTimeMillis()
+            )
+        )
     }
 }

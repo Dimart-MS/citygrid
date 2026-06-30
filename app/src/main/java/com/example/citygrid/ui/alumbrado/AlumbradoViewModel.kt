@@ -34,6 +34,15 @@ class AlumbradoViewModel : ViewModel() {
         // Enviar instrucción al ESP32 por MQTT usando la constante correcta
         val payload = if (encender) "1" else "0"
         MqttManager.publish(Constants.TOPIC_CTRL_LUCES, payload)
-        // Nota: El estado se actualizará cuando llegue la confirmación por MQTT
+        
+        // Actualización optimista inmediata para evitar snapback en la UI
+        val currentState = MqttManager.alumbradoFlow.value
+        MqttManager.updateAlumbradoState(
+            currentState.copy(
+                estadoOn = encender,
+                modo = "MANUAL",
+                ultimaActualizacion = System.currentTimeMillis()
+            )
+        )
     }
 }
