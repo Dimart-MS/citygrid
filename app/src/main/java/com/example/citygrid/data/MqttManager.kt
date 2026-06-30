@@ -193,6 +193,7 @@ object MqttManager {
             return
         }
         try {
+            android.util.Log.d("MqttManager", "Enviando a $topic -> $payload")
             val message = MqttMessage(payload.toByteArray()).apply {
                 qos = 1
                 isRetained = false

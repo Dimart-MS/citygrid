@@ -14,6 +14,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.buildAnnotatedString
@@ -24,10 +25,8 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.citygrid.model.db.DbLecturaLuminaria
 import com.example.citygrid.ui.components.CityGridTopBar
-import com.example.citygrid.ui.components.StatusBadge
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
-
 
 val ColorPrincipal = Color(0xFF0FA3B1)
 val ColorEstadoFondo = Color(0x402A9D8F)
@@ -76,7 +75,6 @@ fun AlumbradoScreen(viewModel: AlumbradoViewModel = viewModel()) {
                     ) {
                         Text(formatTimestamp(state.ultimaActualizacion), style = MaterialTheme.typography.bodySmall, color = Color.LightGray)
 
-                        // --- NUEVO DISEÑO "OPERANDO" DE FIGMA ---
                         Box(
                             modifier = Modifier
                                 .background(Color(0xFF1E3A47), RoundedCornerShape(12.dp))
@@ -106,18 +104,45 @@ fun AlumbradoScreen(viewModel: AlumbradoViewModel = viewModel()) {
 
 
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                // --- TARJETA DE ESTADO CON SWITCH ---
                 Card(modifier = Modifier.weight(1f), colors = CardDefaults.cardColors(containerColor = Color.White)) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        Icon(Icons.Default.Lightbulb, contentDescription = null, tint = if (state.estadoOn) ColorPrincipal else ColorNocheLuna, modifier = Modifier.size(32.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween, // Empuja ícono y switch a las esquinas
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(Icons.Default.Lightbulb, contentDescription = null, tint = if (state.estadoOn) ColorPrincipal else ColorNocheLuna, modifier = Modifier.size(32.dp))
+
+                            Switch(
+                                checked = state.estadoOn,
+                                onCheckedChange = { isChecked ->
+                                    viewModel.alternarLucesManual(isChecked)
+                                },
+                                colors = SwitchDefaults.colors(
+                                    checkedThumbColor = Color.White,
+                                    checkedTrackColor = ColorPrincipal,
+                                    uncheckedThumbColor = Color.White,
+                                    uncheckedTrackColor = Color.LightGray,
+                                    uncheckedBorderColor = Color.Transparent
+                                ),
+                                modifier = Modifier.scale(0.8f) // Un poco más pequeño para verse limpio
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
                         Text("Estado", color = Color.Gray, style = MaterialTheme.typography.labelSmall)
                         Text(if (state.estadoOn) "ON" else "OFF", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = if (state.estadoOn) ColorPrincipal else ColorNocheLuna)
-                        Text("Encendido automático", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                        // Texto dinámico dependiendo del modo
+                        Text(if (state.modo == "MANUAL") "Control manual" else "Encendido automático", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
                     }
                 }
+
+                // --- TARJETA DE CONDICIÓN LDR ---
                 Card(modifier = Modifier.weight(1f), colors = CardDefaults.cardColors(containerColor = Color.White)) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Icon(if (state.condicionNoche) Icons.Default.ModeNight else Icons.Default.WbSunny, contentDescription = null, tint = if (state.condicionNoche) ColorNocheLuna else ColorPrincipal, modifier = Modifier.size(32.dp))
-                        Text("Condicion", color = Color.Gray, style = MaterialTheme.typography.labelSmall)
+                        Spacer(modifier = Modifier.height(28.dp)) // Espaciador para igualar la altura de la tarjeta vecina
+                        Text("Condición", color = Color.Gray, style = MaterialTheme.typography.labelSmall)
                         Text(if (state.condicionNoche) "Noche" else "Día", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = if (state.condicionNoche) ColorNocheLuna else ColorPrincipal)
                         Text("Detectada por LDR", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
                     }

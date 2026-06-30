@@ -34,4 +34,15 @@ class AlumbradoViewModel : ViewModel() {
             _historial.value = lecturas.sortedByDescending { it.fechaHora }
         }
     }
+
+    fun alternarLucesManual(encender: Boolean) {
+        // Enviar instrucción al ESP32 por MQTT
+        val payload = if (encender) "1" else "0"
+        MqttManager.publish("control-luces", payload)
+
+        _alumbradoState.value = _alumbradoState.value.copy(
+            estadoOn = encender,
+            modo = "MANUAL" // Cambiamos el texto de la tarjeta a MANUAL
+        )
+    }
 }

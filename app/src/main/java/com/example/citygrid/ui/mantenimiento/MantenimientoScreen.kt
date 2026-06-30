@@ -95,7 +95,6 @@ fun MantenimientoScreen(viewModel: MantenimientoViewModel = viewModel()) {
 
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Text("Historial de mantenimientos", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = ColorNocheLuna)
-                Text("Ver todo >", color = ColorPrincipal, style = MaterialTheme.typography.labelMedium)
             }
 
             if (isLoading && mantenimientos.isEmpty()) {
