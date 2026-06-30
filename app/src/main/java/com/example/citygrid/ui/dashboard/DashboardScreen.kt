@@ -50,7 +50,7 @@ import com.example.citygrid.navigation.Screen
 import com.example.citygrid.ui.components.AlertItemCard
 import com.example.citygrid.ui.components.SemiCircleChart
 import com.example.citygrid.ui.components.StatusBadge
-import com.example.citygrid.ui.theme.CityGridGreen
+import com.example.citygrid.ui.theme.CityGridPrimary
 import com.example.citygrid.ui.theme.StatusBlue
 import com.example.citygrid.ui.theme.StatusGreen
 import com.example.citygrid.ui.theme.StatusRed
@@ -84,6 +84,7 @@ fun DashboardScreen(
     val alertas by viewModel.alertas.collectAsState()
     val cargando by viewModel.cargando.collectAsState()
     val ultimaActualizacion by viewModel.ultimaActualizacion.collectAsState()
+    val esp32Conectado by viewModel.esp32Conectado.collectAsState()
 
     val tiempoTexto = remember(ultimaActualizacion) {
         if (ultimaActualizacion == 0L) "Cargando..."
@@ -170,11 +171,17 @@ fun DashboardScreen(
                                 Box(
                                     modifier = Modifier
                                         .size(8.dp)
-                                        .background(StatusGreen, CircleShape)
+                                        .background(
+                                            if (esp32Conectado) StatusGreen else StatusRed,
+                                            CircleShape
+                                        )
                                 )
                                 Spacer(Modifier.width(6.dp))
                                 Text(
-                                    text = "$alertasActivas Alertas pendientes de revisión",
+                                    text = if (esp32Conectado)
+                                        "ESP32 Conectado — $alertasActivas alerta(s) pendiente(s)"
+                                    else
+                                        "Sin señal — ESP32 desconectado",
                                     style = MaterialTheme.typography.labelSmall,
                                     color = Color.White
                                 )
@@ -538,14 +545,14 @@ private fun AccesoRapidoItem(
     ) {
         Surface(
             shape = RoundedCornerShape(16.dp),
-            color = CityGridGreen.copy(alpha = 0.1f),
+            color = CityGridPrimary.copy(alpha = 0.1f),
             modifier = Modifier.size(56.dp)
         ) {
             Box(contentAlignment = Alignment.Center) {
                 Icon(
                     imageVector = icon,
                     contentDescription = label,
-                    tint = CityGridGreen,
+                    tint = CityGridPrimary,
                     modifier = Modifier.size(28.dp)
                 )
             }

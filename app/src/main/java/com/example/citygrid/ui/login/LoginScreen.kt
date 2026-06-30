@@ -265,7 +265,7 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
                         result.fold(
                             onSuccess = { usuario ->
                                 // Login exitoso contra Supabase
-                                sessionManager.guardarSesion(usuario.correo, usuario.nombre)
+                                sessionManager.guardarSesion(usuario.correo, usuario.nombre, usuario.idUsuario)
                                 onLoginSuccess()
                             },
                             onFailure = { error ->

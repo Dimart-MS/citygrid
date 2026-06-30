@@ -6,25 +6,20 @@ import com.example.citygrid.data.MqttManager
 import com.example.citygrid.data.repository.AlumbradoRepository
 import com.example.citygrid.model.AlumbradoState
 import com.example.citygrid.model.db.DbLecturaLuminaria
+import com.example.citygrid.utils.Constants
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class AlumbradoViewModel : ViewModel() {
-
-    private val _alumbradoState = MutableStateFlow(AlumbradoState())
-    val alumbradoState: StateFlow<AlumbradoState> = _alumbradoState.asStateFlow()
+    // Usar directamente el flujo de MqttManager
+    val alumbradoState: StateFlow<AlumbradoState> = MqttManager.alumbradoFlow
 
     private val _historial = MutableStateFlow<List<DbLecturaLuminaria>>(emptyList())
     val historial: StateFlow<List<DbLecturaLuminaria>> = _historial.asStateFlow()
 
     init {
-        viewModelScope.launch {
-            MqttManager.alumbradoFlow.collect { estadoMqtt ->
-                _alumbradoState.value = estadoMqtt
-            }
-        }
         cargarHistorial()
     }
 
@@ -36,13 +31,9 @@ class AlumbradoViewModel : ViewModel() {
     }
 
     fun alternarLucesManual(encender: Boolean) {
-        // Enviar instrucción al ESP32 por MQTT
+        // Enviar instrucción al ESP32 por MQTT usando la constante correcta
         val payload = if (encender) "1" else "0"
-        MqttManager.publish("control-luces", payload)
-
-        _alumbradoState.value = _alumbradoState.value.copy(
-            estadoOn = encender,
-            modo = "MANUAL" // Cambiamos el texto de la tarjeta a MANUAL
-        )
+        MqttManager.publish(Constants.TOPIC_CTRL_LUCES, payload)
+        // Nota: El estado se actualizará cuando llegue la confirmación por MQTT
     }
-}
+}

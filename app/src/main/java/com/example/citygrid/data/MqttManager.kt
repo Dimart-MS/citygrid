@@ -28,6 +28,8 @@ import org.eclipse.paho.client.mqttv3.MqttAsyncClient
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence
 import org.eclipse.paho.client.mqttv3.*
 import java.util.UUID
+import com.example.citygrid.data.SupabaseManager
+import io.github.jan.supabase.realtime.realtime
 
 object MqttManager {
 
@@ -87,10 +89,11 @@ object MqttManager {
 
     // Variables de monitoreo de inactividad / fuera de línea y Supabase Realtime
     private var monitorJob: kotlinx.coroutines.Job? = null
-    private var aguaRealtimeJob: kotlinx.coroutines.Job? = null
-    private var alumbradoRealtimeJob: kotlinx.coroutines.Job? = null
     private var ultimoMensajeBasuraTimestamp = System.currentTimeMillis()
     private var esSistemaOnline = true
+
+    @Volatile
+    private var isConnecting = false
 
     // Opciones de conexión MQTT (Requisitos del examen)
     val mqttOptions = MqttConnectOptions().apply {
@@ -113,6 +116,10 @@ object MqttManager {
         cargarLecturasIniciales()
 
         if (client != null && client!!.isConnected) return
+        synchronized(this) {
+            if (isConnecting) return
+            isConnecting = true
+        }
 
         try {
             val clientId = "CityGrid_Android_" + UUID.randomUUID().toString()
@@ -121,16 +128,29 @@ object MqttManager {
             client?.setCallback(object : MqttCallbackExtended {
                 override fun connectComplete(reconnect: Boolean, serverURI: String?) {
                     android.util.Log.d("MqttManager", "Conectado exitosamente a $serverURI. Reconnect: $reconnect")
+                    synchronized(this@MqttManager) {
+                        isConnecting = false
+                    }
                     _residuosFlow.value = _residuosFlow.value.copy(conectado = true)
                     _aguaFlow.value = _aguaFlow.value.copy(conectado = true)
                     _alumbradoFlow.value = _alumbradoFlow.value.copy(conectado = true)
                     suscribirATopics()
                     iniciarMonitorInactividad(context)
-                    iniciarEscuchaRealtimeSupabase(context)
+                    // Conectar a Supabase Realtime para que otras partes de la app puedan oír alertas en tiempo real
+                    scope.launch {
+                        try {
+                            SupabaseManager.client.realtime.connect()
+                        } catch (e: Exception) {
+                            android.util.Log.e("MqttManager", "Error al conectar Realtime de Supabase", e)
+                        }
+                    }
                 }
 
                 override fun connectionLost(cause: Throwable?) {
                     android.util.Log.e("MqttManager", "Conexión perdida con el broker", cause)
+                    synchronized(this@MqttManager) {
+                        isConnecting = false
+                    }
                     _residuosFlow.value = _residuosFlow.value.copy(conectado = false)
                     _aguaFlow.value = _aguaFlow.value.copy(conectado = false)
                     _alumbradoFlow.value = _alumbradoFlow.value.copy(conectado = false)
@@ -166,18 +186,22 @@ object MqttManager {
 
                 override fun onFailure(asyncActionToken: IMqttToken?, exception: Throwable?) {
                     android.util.Log.e("MqttManager", "Llamada connect() fallida", exception)
+                    synchronized(this@MqttManager) {
+                        isConnecting = false
+                    }
                 }
             })
         } catch (e: Exception) {
             android.util.Log.e("MqttManager", "Error al intentar iniciar la conexión", e)
+            synchronized(this) {
+                isConnecting = false
+            }
         }
     }
 
     fun disconnect() {
         try {
             monitorJob?.cancel()
-            aguaRealtimeJob?.cancel()
-            alumbradoRealtimeJob?.cancel()
             client?.disconnect()
             _residuosFlow.value = _residuosFlow.value.copy(conectado = false)
             _aguaFlow.value = _aguaFlow.value.copy(conectado = false)
@@ -244,12 +268,12 @@ object MqttManager {
 
                     // --- Telemetría de Alumbrado (JSON con ldrLux, estadoOn, etc.) ---
                     Constants.TOPIC_ALUMBRADO -> {
-                        AlumbradoMqttProcessor.procesarMensaje(topic, payload, scope)
+                        AlumbradoMqttProcessor.procesarMensaje(topic, payload, context, scope)
                     }
 
                     // --- Telemetría de Agua (JSON con nivelTanque y bombaActiva) ---
                     Constants.TOPIC_AGUA -> {
-                        AguaMqttProcessor.procesarMensaje(topic, payload, scope)
+                        AguaMqttProcessor.procesarMensaje(topic, payload, context, scope)
                     }
 
                     // --- Canal de Alertas Generales ---
@@ -306,51 +330,7 @@ object MqttManager {
         }
     }
 
-    private fun iniciarEscuchaRealtimeSupabase(context: Context) {
-        aguaRealtimeJob?.cancel()
-        aguaRealtimeJob = scope.launch {
-            try {
-                com.example.citygrid.data.repository.AguaRepository.escucharLecturasAgua().collect { lecturas ->
-                    val ultimaLectura = lecturas.sortedByDescending { it.idLecturaAgua }.firstOrNull()
-                    if (ultimaLectura != null) {
-                        val nivelReal = ultimaLectura.nivelAgua.toInt()
-                        val activa = nivelReal < 30
-                        _aguaFlow.value = _aguaFlow.value.copy(
-                            nivelTanque = nivelReal,
-                            bombaActiva = activa,
-                            estadoGeneral = if (nivelReal >= 30) "Operando correctamente" else "Nivel Crítico",
-                            ultimaActualizacion = System.currentTimeMillis()
-                        )
-                        AguaMqttProcessor.verificarAlertasAgua(nivelReal, context, scope)
-                    }
-                }
-            } catch (e: Exception) {
-                android.util.Log.e("MqttManager", "Error en Realtime de Agua", e)
-            }
-        }
 
-        alumbradoRealtimeJob?.cancel()
-        alumbradoRealtimeJob = scope.launch {
-            try {
-                com.example.citygrid.data.repository.AlumbradoRepository.escucharLecturasLuminarias().collect { lecturas ->
-                    val ultimaLectura = lecturas.sortedByDescending { it.idLecturaLuminaria }.firstOrNull()
-                    if (ultimaLectura != null) {
-                        val encendido = ultimaLectura.valorLdr < 100
-                        _alumbradoFlow.value = _alumbradoFlow.value.copy(
-                            estadoOn = encendido,
-                            condicionNoche = encendido,
-                            ldrLux = ultimaLectura.valorLdr,
-                            luminariasActivas = if (encendido) 12 else 0,
-                            ultimaActualizacion = System.currentTimeMillis()
-                        )
-                        AlumbradoMqttProcessor.verificarAlertasAlumbrado(encendido, context, scope)
-                    }
-                }
-            } catch (e: Exception) {
-                android.util.Log.e("MqttManager", "Error en Realtime de Alumbrado", e)
-            }
-        }
-    }
 
     @Synchronized
     private fun registrarActividadDispositivo(context: Context) {

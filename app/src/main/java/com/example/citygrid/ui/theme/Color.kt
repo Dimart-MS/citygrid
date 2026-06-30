@@ -3,9 +3,9 @@ package com.example.citygrid.ui.theme
 import androidx.compose.ui.graphics.Color
 
 // ─── Paleta principal CityGrid ────────────────────────────────────────────
-val CityGridGreen       = Color(0xFF1B8A4E)   // Verde primario (botones, activos)
-val CityGridGreenLight  = Color(0xFF4CAF50)   // Verde claro (badges NORMAL)
-val CityGridGreenDark   = Color(0xFF0D5C32)   // Verde oscuro (header)
+val CityGridPrimary     = Color(0xFF00695C)   // Teal primario (botones, activos) - azulado
+val CityGridPrimaryLight = Color(0xFF4DB6AC)  // Teal claro (badges NORMAL)
+val CityGridPrimaryDark  = Color(0xFF003D34)  // Teal oscuro (header)
 
 // ─── Estados de sensores ──────────────────────────────────────────────────
 val StatusRed           = Color(0xFFE53935)   // LLENO / CRÍTICO

@@ -8,11 +8,11 @@ import androidx.compose.runtime.Composable
 
 // ─── Esquema Claro (default CityGrid) ─────────────────────────────────────────
 private val LightColorScheme = lightColorScheme(
-    primary        = CityGridGreen,
+    primary        = CityGridPrimary,
     onPrimary      = SurfaceCard,
-    primaryContainer = CityGridGreenDark,
+    primaryContainer = CityGridPrimaryDark,
     onPrimaryContainer = SurfaceCard,
-    secondary      = CityGridGreenLight,
+    secondary      = CityGridPrimaryLight,
     onSecondary    = SurfaceCard,
     tertiary       = StatusBlue,
     error          = StatusRed,
@@ -28,11 +28,11 @@ private val LightColorScheme = lightColorScheme(
 
 // ─── Esquema Oscuro ───────────────────────────────────────────────────────────
 private val DarkColorScheme = darkColorScheme(
-    primary        = CityGridGreenLight,
+    primary        = CityGridPrimaryLight,
     onPrimary      = TextPrimary,
-    primaryContainer = CityGridGreenDark,
+    primaryContainer = CityGridPrimaryDark,
     onPrimaryContainer = SurfaceCard,
-    secondary      = CityGridGreenLight,
+    secondary      = CityGridPrimaryLight,
     onSecondary    = TextPrimary,
     tertiary       = StatusBlue,
     error          = StatusRed,
@@ -48,10 +48,10 @@ private val DarkColorScheme = darkColorScheme(
 
 @Composable
 fun CityGridTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    darkTheme: Boolean = false, // Siempre light mode
     content: @Composable () -> Unit
 ) {
-    val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
+    val colorScheme = LightColorScheme
 
     MaterialTheme(
         colorScheme = colorScheme,

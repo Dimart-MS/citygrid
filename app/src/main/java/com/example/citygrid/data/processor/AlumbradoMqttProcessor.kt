@@ -7,6 +7,7 @@ import com.example.citygrid.data.repository.AlertaRepository
 import com.example.citygrid.data.repository.AlumbradoRepository
 import com.example.citygrid.model.TipoAlerta
 import com.example.citygrid.model.db.DbAlerta
+import com.example.citygrid.utils.Constants
 import com.example.citygrid.utils.NotificationHelper
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -15,11 +16,29 @@ import kotlinx.serialization.json.Json
 object AlumbradoMqttProcessor {
     private val alertasReportadas = mutableMapOf<String, Boolean>()
 
-    fun procesarMensaje(topic: String, payload: String, scope: CoroutineScope) {
+    fun procesarMensaje(topic: String, payload: String, context: Context, scope: CoroutineScope) {
         scope.launch {
             try {
                 val data = Json.decodeFromString<AlumbradoPayload>(payload)
                 val valorLdr = data.ldrLux ?: (if (data.estadoOn == true) 45 else 800)
+                val encendido = data.estadoOn ?: (valorLdr < Constants.UMBRAL_LUZ_ADC)
+
+                // Actualizar el StateFlow INMEDIATAMENTE para refrescar la UI sin esperar Supabase Realtime
+                MqttManager.updateAlumbradoState(
+                    MqttManager.alumbradoFlow.value.copy(
+                        estadoOn = encendido,
+                        condicionNoche = data.condicionNoche ?: encendido,
+                        ldrLux = valorLdr,
+                        luminariasActivas = data.luminariasActivas ?: (if (encendido) 12 else 0),
+                        modo = data.modo ?: "AUTO",
+                        ultimaActualizacion = System.currentTimeMillis()
+                    )
+                )
+
+                // Verificar alertas de alumbrado de manera directa
+                verificarAlertasAlumbrado(encendido, context, this)
+
+                // Guardar en Supabase en background para el historial
                 AlumbradoRepository.insertarLecturaLuminaria(idLuminaria = 1, valorLdr = valorLdr)
             } catch (e: Exception) {
                 android.util.Log.e("AlumbradoMqttProcessor", "Error al procesar mensaje de Alumbrado", e)

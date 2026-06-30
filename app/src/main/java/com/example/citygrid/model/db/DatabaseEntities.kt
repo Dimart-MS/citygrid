@@ -29,11 +29,6 @@ data class DbUsuario(
 // Módulo de Residuos
 // =============================================================================
 
-@Serializable
-data class DbTipoResiduo(
-    @SerialName("idtiporesiduo") val idTipoResiduo: Int? = null,
-    @SerialName("nombre") val nombre: String
-)
 
 @Serializable
 data class DbContenedor(
@@ -75,11 +70,6 @@ data class DbBomba(
     @SerialName("fechaactualizacion") val fechaActualizacion: String? = null
 )
 
-@Serializable
-data class DbBombaTanque(
-    @SerialName("idbomba") val idBomba: Int,
-    @SerialName("idtanque") val idTanque: Int
-)
 
 @Serializable
 data class DbLecturaAgua(
@@ -114,38 +104,6 @@ data class DbLecturaLuminaria(
 // Dispositivos y Alertas
 // =============================================================================
 
-@Serializable
-data class DbTipoDispositivo(
-    @SerialName("idtipodispositivo") val idTipoDispositivo: Int? = null,
-    @SerialName("nombre") val nombre: String
-)
-
-@Serializable
-data class DbDispositivoIot(
-    @SerialName("iddispositivo") val idDispositivo: Int? = null,
-    @SerialName("idtipodispositivo") val idTipoDispositivo: Int,
-    @SerialName("nombre") val nombre: String,
-    @SerialName("estadoconexion") val estadoConexion: String,
-    @SerialName("ultimacomunicacion") val ultimaComunicacion: String? = null
-)
-
-@Serializable
-data class DbSistema(
-    @SerialName("idsistema") val idSistema: Int? = null,
-    @SerialName("nombre") val nombre: String
-)
-
-@Serializable
-data class DbTipoAlerta(
-    @SerialName("idtipoalerta") val idTipoAlerta: Int? = null,
-    @SerialName("nombre") val nombre: String
-)
-
-@Serializable
-data class DbEstadoAlerta(
-    @SerialName("idestadoalerta") val idEstadoAlerta: Int? = null,
-    @SerialName("nombre") val nombre: String
-)
 
 @Serializable
 data class DbAlerta(

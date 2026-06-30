@@ -9,13 +9,14 @@ class SessionManager(context: Context) {
     private val prefs: SharedPreferences =
         context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
 
-    fun guardarSesion(correo: String, nombre: String) {
+    fun guardarSesion(correo: String, nombre: String, idUsuario: Int? = null) {
         prefs.edit()
             .putString(Constants.KEY_CORREO, correo)
             .putString(Constants.KEY_NOMBRE, nombre)
             .putBoolean(Constants.KEY_SESION_ACTIVA, true)
             .putLong(Constants.KEY_ULTIMA_SYNC, System.currentTimeMillis())
             .apply()
+        idUsuario?.let { prefs.edit().putInt("id_usuario", it).apply() }
     }
 
     fun cerrarSesion() {
@@ -50,4 +51,6 @@ class SessionManager(context: Context) {
             .putLong(Constants.KEY_ULTIMA_SYNC, System.currentTimeMillis())
             .apply()
     }
+
+    fun getIdUsuario(): Int = prefs.getInt("id_usuario", 1)
 }

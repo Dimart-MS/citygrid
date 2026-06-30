@@ -157,6 +157,13 @@ bool bote3Lleno = false;
 unsigned long tiempoOscuridad = 0;
 bool lucesEncendidas = false;
 
+// Variables para control manual temporal (App -> ESP32)
+bool modoManualLuz = false;
+unsigned long tiempoUltimaOrdenLuz = 0;
+bool modoManualAgua = false;
+unsigned long tiempoUltimaOrdenAgua = 0;
+const unsigned long TIEMPO_OVERRIDE_MANUAL_MS = 60000; // 1 minuto de control manual antes de volver a AUTO
+
 // Variables para publicar periodicamente la distancia (cada 5s)
 // [MODIFICACIÓN CITYGRID]: Se agregan variables para controlar el tiempo 
 // en que se publican las distancias por MQTT para que la UI de la app Android 
@@ -199,6 +206,19 @@ void setup_wifi() {
   }
   Serial.println("\nWiFi conectado. IP: ");
   Serial.println(WiFi.localIP());
+
+  // Sincronizar hora para validación de certificados SSL de HiveMQ
+  configTime(-6 * 3600, 0, "pool.ntp.org", "time.nist.gov"); // GMT-6
+  Serial.print("Sincronizando hora NTP...");
+  time_t now = time(nullptr);
+  int intentos = 0;
+  while (now < 86400 && intentos < 20) {
+    delay(500);
+    Serial.print(".");
+    now = time(nullptr);
+    intentos++;
+  }
+  Serial.println("\nHora sincronizada.");
 }
 
 void callback(char* topic, byte* payload, unsigned int length) {
@@ -208,26 +228,31 @@ void callback(char* topic, byte* payload, unsigned int length) {
   int valor = payload[0] - '0';
 
   if (strcmp(topic, TOPIC_CTRL_LUCES) == 0) {
+    modoManualLuz = true;
+    tiempoUltimaOrdenLuz = millis();
     if (valor == 1) {
       digitalWrite(PIN_LEDS_EXT, HIGH);   
       digitalWrite(PIN_RELEVADOR, HIGH);  
-      Serial.println("App: Luces ENCENDIDAS");
+      lucesEncendidas = true;
+      Serial.println("App: Luces ENCENDIDAS (MANUAL)");
     } else {
       digitalWrite(PIN_LEDS_EXT, LOW);    
       digitalWrite(PIN_RELEVADOR, LOW);   
       lucesEncendidas = false;            
       tiempoOscuridad = 0;
-      Serial.println("App: Luces APAGADAS");
+      Serial.println("App: Luces APAGADAS (MANUAL)");
     }
   }
 
   if (strcmp(topic, TOPIC_CTRL_BOMBA) == 0) {
+    modoManualAgua = true;
+    tiempoUltimaOrdenAgua = millis();
     if (valor == 1) {
       digitalWrite(PIN_BOMBA, HIGH);  
-      Serial.println("App: Bomba ENCENDIDA");
+      Serial.println("App: Bomba ENCENDIDA (MANUAL)");
     } else {
       digitalWrite(PIN_BOMBA, LOW);   
-      Serial.println("App: Bomba APAGADA");
+      Serial.println("App: Bomba APAGADA (MANUAL)");
     }
   }
 }
@@ -273,6 +298,10 @@ void setup() {
   setup_wifi();
 
   espClient.setCACert(root_ca);
+  // NOTA: Si tienes problemas de conexión SSL, puedes comentar la línea de arriba 
+  // y descomentar la siguiente para deshabilitar la verificación estricta del certificado:
+  // espClient.setInsecure();
+
   client.setServer(mqtt_server, mqtt_port);
   client.setCallback(callback);
 }
@@ -408,23 +437,32 @@ void loop() {
   // ----------------------------------------------------------
   int valorLuz = analogRead(PIN_LDR);
   bool cambioLuz = false;
-  if (valorLuz < UMBRAL_LUZ_LDR) {
-    if (tiempoOscuridad == 0) tiempoOscuridad = ahora;
-    if (!lucesEncendidas && (ahora - tiempoOscuridad >= TIEMPO_OSCURIDAD_MS)) {
-      lucesEncendidas = true;
-      digitalWrite(PIN_LEDS_EXT, HIGH);            
-      digitalWrite(PIN_RELEVADOR, HIGH);            
-      cambioLuz = true;
-      Serial.println("Oscuridad detectada — Luces ENCENDIDAS");
-    }
-  } else {
-    tiempoOscuridad = 0;
-    if (lucesEncendidas) {
-      lucesEncendidas = false;
-      digitalWrite(PIN_LEDS_EXT, LOW);             
-      digitalWrite(PIN_RELEVADOR, LOW);             
-      cambioLuz = true;
-      Serial.println("Hay luz — Luces APAGADAS");
+
+  // Si venció el tiempo de control manual, regresar a automático
+  if (modoManualLuz && (ahora - tiempoUltimaOrdenLuz >= TIEMPO_OVERRIDE_MANUAL_MS)) {
+    modoManualLuz = false;
+    Serial.println("Control manual de luces finalizado. Regresando a AUTOMÁTICO.");
+  }
+
+  if (!modoManualLuz) {
+    if (valorLuz < UMBRAL_LUZ_LDR) {
+      if (tiempoOscuridad == 0) tiempoOscuridad = ahora;
+      if (!lucesEncendidas && (ahora - tiempoOscuridad >= TIEMPO_OSCURIDAD_MS)) {
+        lucesEncendidas = true;
+        digitalWrite(PIN_LEDS_EXT, HIGH);            
+        digitalWrite(PIN_RELEVADOR, HIGH);            
+        cambioLuz = true;
+        Serial.println("Oscuridad detectada — Luces ENCENDIDAS (AUTO)");
+      }
+    } else {
+      tiempoOscuridad = 0;
+      if (lucesEncendidas) {
+        lucesEncendidas = false;
+        digitalWrite(PIN_LEDS_EXT, LOW);             
+        digitalWrite(PIN_RELEVADOR, LOW);             
+        cambioLuz = true;
+        Serial.println("Hay luz — Luces APAGADAS (AUTO)");
+      }
     }
   }
 
@@ -433,11 +471,12 @@ void loop() {
   if (cambioLuz || ahora - tiempoUltimoReporteLuz >= 10000) {
     char jsonLuz[160];
     snprintf(jsonLuz, sizeof(jsonLuz), 
-             "{\"ldrLux\":%d,\"estadoOn\":%s,\"condicionNoche\":%s,\"luminariasActivas\":%d,\"modo\":\"AUTO\"}",
+             "{\"ldrLux\":%d,\"estadoOn\":%s,\"condicionNoche\":%s,\"luminariasActivas\":%d,\"modo\":\"%s\"}",
              valorLuz, 
              lucesEncendidas ? "true" : "false", 
              lucesEncendidas ? "true" : "false", 
-             lucesEncendidas ? 12 : 0);
+             lucesEncendidas ? 12 : 0,
+             modoManualLuz ? "MANUAL" : "AUTO");
     client.publish(TOPIC_LUCES, jsonLuz, true);
     tiempoUltimoReporteLuz = ahora;
     Serial.print("Publicado JSON Alumbrado: ");
@@ -449,13 +488,25 @@ void loop() {
   // ----------------------------------------------------------
   long distAgua = medirDistancia(TRIG_AGUA, ECHO_AGUA);
   bool bombaActivaAnterior = (digitalRead(PIN_BOMBA) == HIGH);
-  bool bombaActiva = false;
-  if (distAgua > 0 && distAgua <= DISTANCIA_AGUA_CM) {
-    bombaActiva = true;
-    digitalWrite(PIN_BOMBA, HIGH);              
-  } else {
-    bombaActiva = false;
-    digitalWrite(PIN_BOMBA, LOW);               
+  bool bombaActiva = bombaActivaAnterior;
+
+  // Si venció el tiempo de control manual, regresar a automático
+  if (modoManualAgua && (ahora - tiempoUltimaOrdenAgua >= TIEMPO_OVERRIDE_MANUAL_MS)) {
+    modoManualAgua = false;
+    Serial.println("Control manual de bomba finalizado. Regresando a AUTOMÁTICO.");
+  }
+
+  if (!modoManualAgua) {
+    // Control automático con histéresis:
+    // Activa la bomba si el agua está baja (distancia al sensor grande, ej. >= 14 cm)
+    // Apaga la bomba si el agua está alta (distancia pequeña, ej. <= DISTANCIA_AGUA_CM (6 cm))
+    if (distAgua >= 14) {
+      bombaActiva = true;
+      digitalWrite(PIN_BOMBA, HIGH);
+    } else if (distAgua > 0 && distAgua <= DISTANCIA_AGUA_CM) {
+      bombaActiva = false;
+      digitalWrite(PIN_BOMBA, LOW);
+    }
   }
 
   // Publicar JSON de agua periódicamente o si cambia el estado de la bomba

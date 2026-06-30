@@ -16,11 +16,27 @@ import kotlinx.serialization.json.Json
 object AguaMqttProcessor {
     private val alertasReportadas = mutableMapOf<String, Boolean>()
 
-    fun procesarMensaje(topic: String, payload: String, scope: CoroutineScope) {
+    fun procesarMensaje(topic: String, payload: String, context: Context, scope: CoroutineScope) {
         scope.launch {
             try {
                 val data = Json.decodeFromString<AguaPayload>(payload)
                 val nivelTanque = data.nivelTanque ?: 50
+                val bombaActiva = data.bombaActiva ?: (nivelTanque < Constants.UMBRAL_AGUA_BAJO)
+
+                // Actualizar el StateFlow INMEDIATAMENTE para refrescar la UI sin esperar Supabase Realtime
+                MqttManager.updateAguaState(
+                    MqttManager.aguaFlow.value.copy(
+                        nivelTanque = nivelTanque,
+                        bombaActiva = bombaActiva,
+                        estadoGeneral = if (nivelTanque >= Constants.UMBRAL_AGUA_BAJO) "Operando correctamente" else "Nivel Crítico",
+                        ultimaActualizacion = System.currentTimeMillis()
+                    )
+                )
+
+                // Verificar alertas de agua baja de manera directa
+                verificarAlertasAgua(nivelTanque, context, this)
+
+                // Guardar en Supabase en background para el historial
                 val distanciaCm = (100.0 - nivelTanque) * 20.0 / 100.0
                 AguaRepository.insertarLecturaAgua(
                     idTanque = 1,

@@ -2,8 +2,10 @@ package com.example.citygrid.ui.alertas
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.citygrid.data.MqttManager
 import com.example.citygrid.data.SupabaseManager
 import com.example.citygrid.data.repository.AlertaRepository
+import com.example.citygrid.data.repository.BitacoraRepository
 import com.example.citygrid.model.Alerta
 import com.example.citygrid.model.TipoAlerta
 import com.example.citygrid.model.db.DbAlerta
@@ -25,11 +27,14 @@ class AlertasViewModel : ViewModel() {
     private val _dbAlertas = MutableStateFlow<List<DbAlerta>>(emptyList())
 
     // Mapeo reactivo de DbAlerta a Alerta para renderizado de interfaz y filtrado en ViewModel
+    // Combina alertas de DB + MQTT
     val filteredAlertas: StateFlow<List<Alerta>> = combine(
         _dbAlertas,
+        MqttManager.alertasFlow,
         _selectedFilter
-    ) { dbAlertas, filter ->
-        val uiAlertas = dbAlertas.map { dbAlerta ->
+    ) { dbAlertas, mqttAlertas, filter ->
+        // Convertir alertas de DB
+        val dbMapped = dbAlertas.map { dbAlerta ->
             val sistemaName = when (dbAlerta.idSistema) {
                 1 -> "Residuos"
                 2 -> "Agua"
@@ -64,10 +69,14 @@ class AlertasViewModel : ViewModel() {
             )
         }
 
+        // Combinar DB + MQTT
+        val todasAlertas = dbMapped + mqttAlertas
+
         if (filter == "Todas") {
-            uiAlertas
+            todasAlertas.sortedByDescending { it.timestamp }
         } else {
-            uiAlertas.filter { it.sistema.equals(filter, ignoreCase = true) }
+            todasAlertas.filter { it.sistema.equals(filter, ignoreCase = true) }
+                .sortedByDescending { it.timestamp }
         }
     }.stateIn(
         scope = viewModelScope,
@@ -75,19 +84,23 @@ class AlertasViewModel : ViewModel() {
         initialValue = emptyList()
     )
 
-    // Contadores de alertas pendientes calculados dinámicamente desde el flujo de base de datos
+    // Contadores de alertas pendientes calculados dinámicamente desde DB + MQTT
     val criticalCount: StateFlow<Int> = combine(
         _dbAlertas,
-        _selectedFilter
-    ) { dbAlertas, _ ->
-        dbAlertas.count { it.idTipoAlerta == 1 && it.idEstadoAlerta != 2 }
+        MqttManager.alertasFlow
+    ) { dbAlertas, mqttAlertas ->
+        val dbCriticas = dbAlertas.count { it.idTipoAlerta == 1 && it.idEstadoAlerta != 2 }
+        val mqttCriticas = mqttAlertas.count { it.tipo == TipoAlerta.CRITICO && !it.atendida }
+        dbCriticas + mqttCriticas
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 
     val warningCount: StateFlow<Int> = combine(
         _dbAlertas,
-        _selectedFilter
-    ) { dbAlertas, _ ->
-        dbAlertas.count { it.idTipoAlerta == 2 && it.idEstadoAlerta != 2 }
+        MqttManager.alertasFlow
+    ) { dbAlertas, mqttAlertas ->
+        val dbAdvertencias = dbAlertas.count { it.idTipoAlerta == 2 && it.idEstadoAlerta != 2 }
+        val mqttAdvertencias = mqttAlertas.count { it.tipo == TipoAlerta.ADVERTENCIA && !it.atendida }
+        dbAdvertencias + mqttAdvertencias
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 
     init {
@@ -129,6 +142,12 @@ class AlertasViewModel : ViewModel() {
             val result = AlertaRepository.marcarAlertaComoAtendida(idLong)
             if (result.isSuccess) {
                 android.util.Log.d("AlertasViewModel", "Alerta $idLong marcada como atendida exitosamente.")
+                // Registrar en la bitácora del sistema
+                BitacoraRepository.registrar(
+                    idUsuario = 0, // TODO: pasar SessionManager al ViewModel si se requiere el ID real
+                    accion = "ALERTA_ATENDIDA",
+                    descripcion = "Alerta id=$idLong marcada como atendida"
+                )
                 // Volver a cargar para refrescar la lista local inmediatamente
                 val actualizadas = AlertaRepository.obtenerAlertas()
                 _dbAlertas.value = actualizadas

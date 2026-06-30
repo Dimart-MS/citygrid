@@ -20,7 +20,9 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.citygrid.data.SessionManager
 import com.example.citygrid.model.db.DbMantenimiento
 import com.example.citygrid.ui.components.CityGridTopBar
 import java.time.OffsetDateTime
@@ -40,7 +42,11 @@ val TxtCorrectivo = Color(0xFFC62828)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MantenimientoScreen(viewModel: MantenimientoViewModel = viewModel()) {
+fun MantenimientoScreen() {
+    val context = LocalContext.current
+    val sessionManager = remember { SessionManager(context) }
+    val viewModel: MantenimientoViewModel = viewModel { MantenimientoViewModel(sessionManager) }
+    
     val mantenimientos by viewModel.mantenimientos.collectAsState()
     val usuariosMap by viewModel.usuariosMap.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
@@ -124,7 +130,7 @@ fun MantenimientoScreen(viewModel: MantenimientoViewModel = viewModel()) {
                 dragHandle = null,
                 modifier = Modifier.fillMaxHeight(0.95f)
             ) {
-                val nombreLogueado = usuariosMap[viewModel.idUsuarioLogueado] ?: "Administrador"
+                val nombreLogueado = usuariosMap[sessionManager.getIdUsuario()] ?: "Administrador"
 
                 FormularioMantenimientoFigma(
                     nombreResponsable = nombreLogueado,

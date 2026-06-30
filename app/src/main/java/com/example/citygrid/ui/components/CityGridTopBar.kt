@@ -37,7 +37,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.citygrid.R
-import com.example.citygrid.ui.theme.CityGridGreen
+import com.example.citygrid.ui.theme.CityGridPrimary
 import com.example.citygrid.ui.theme.SurfaceCard
 
 /**
@@ -124,7 +124,7 @@ fun CityGridTopBar(
                     Icon(
                         imageVector = Icons.Outlined.Notifications,
                         contentDescription = "Alertas",
-                        tint = CityGridGreen,
+                        tint = CityGridPrimary,
                         modifier = Modifier.size(24.dp)
                     )
                 }

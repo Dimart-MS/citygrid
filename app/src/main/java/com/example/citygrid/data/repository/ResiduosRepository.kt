@@ -4,6 +4,8 @@ import com.example.citygrid.data.SupabaseManager
 import com.example.citygrid.model.db.DbContenedor
 import com.example.citygrid.model.db.DbLecturaResiduo
 import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.realtime.selectAsFlow
+import io.github.jan.supabase.annotations.SupabaseExperimental
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 
@@ -52,7 +54,10 @@ object ResiduosRepository {
         return lecturas.maxByOrNull { it.idLecturaResiduo ?: 0L }
     }
 
-    fun escucharLecturasResiduos(): Flow<DbLecturaResiduo> {
-        return emptyFlow()
+    @OptIn(SupabaseExperimental::class)
+    fun escucharLecturasResiduos(): Flow<List<DbLecturaResiduo>> {
+        return SupabaseManager.client
+            .from("lecturasresiduos")
+            .selectAsFlow(DbLecturaResiduo::idLecturaResiduo)
     }
 }

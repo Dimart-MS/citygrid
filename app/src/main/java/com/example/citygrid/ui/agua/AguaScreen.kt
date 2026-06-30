@@ -189,6 +189,46 @@ fun AguaScreen(viewModel: AguaViewModel = viewModel()) {
                 }
             }
 
+            // ── Control Manual de Bomba ───────────────────────────────────────
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFE8F5E9)),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text("CONTROL MANUAL", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            Text("Bomba de Agua", fontWeight = FontWeight.SemiBold, color = Color(0xFF1B5E20))
+                            Text(
+                                text = if (state.bombaActiva) "Activa — modo manual (60s)" else "Apagada",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color.Gray
+                            )
+                        }
+                        Switch(
+                            checked = state.bombaActiva,
+                            onCheckedChange = { viewModel.activarBombaManual(it) },
+                            colors = SwitchDefaults.colors(
+                                checkedThumbColor = Color.White,
+                                checkedTrackColor = ColorPrincipal
+                            )
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        "⚠ El ESP32 vuelve al modo automático después de 60 seg.",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color(0xFF558B2F)
+                    )
+                }
+            }
+
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Text("Eventos recientes", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 TextButton(onClick = { mostrarHistorial = true }) { Text("Historial >", color = ColorPrincipal) }
