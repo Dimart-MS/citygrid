@@ -1,68 +1,79 @@
 package com.example.citygrid.ui.components
 
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.citygrid.ui.theme.DividerColor
 import com.example.citygrid.ui.theme.StatusGreen
 import com.example.citygrid.ui.theme.StatusRed
 import com.example.citygrid.ui.theme.StatusYellow
 import com.example.citygrid.ui.theme.TextSecondary
 import kotlin.math.max
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 
 /**
- * Gráfico de semicírculo (arco de 180°) que muestra un porcentaje.
+ * Gráfico de semicírculo (arco de 180°) — CityGrid v2.
  *
  * El color del arco depende del valor:
- *  - >= 85  -> StatusRed    (crítico)
- *  - >= 50  -> StatusYellow (medio / advertencia)
- *  - otro   -> StatusGreen  (normal)
+ *  - >= 85  → StatusRed    (crítico)
+ *  - >= 50  → StatusYellow (medio / advertencia)
+ *  - otro   → StatusGreen  (normal / óptimo)
  *
- * Implementado con Canvas (sin dependencias externas).
+ * Mejoras v2: stroke más grueso (28dp), animación de entrada, arco
+ * con glow sutil (shadow track más ancho y traslucido).
  */
 @Composable
 fun SemiCircleChart(
     porcentaje: Int,
     modifier: Modifier = Modifier,
-    label: String = ""
+    label: String = "",
+    color: Color? = null
 ) {
     val safeProgress = porcentaje.coerceIn(0, 100)
 
-    val color = when {
+    val displayColor = color ?: when {
         safeProgress >= 85 -> StatusRed
         safeProgress >= 50 -> StatusYellow
-        else                -> StatusGreen
+        else               -> StatusGreen
     }
+
+    val animatedSweep by animateFloatAsState(
+        targetValue = (safeProgress / 100f) * 180f,
+        animationSpec = tween(durationMillis = 1200, easing = FastOutSlowInEasing),
+        label = "semiCircleSweep"
+    )
 
     Box(
         contentAlignment = Alignment.BottomCenter,
-        modifier = modifier.size(180.dp)
+        modifier = modifier.size(190.dp)
     ) {
-        Canvas(modifier = Modifier.size(180.dp)) {
-            val strokeWidth = 24.dp.toPx()
-            // Garantiza radio positivo incluso si el Canvas fuera muy chico.
-            val radius = max(1f, (size.minDimension / 2f) - strokeWidth / 2f)
-            val topLeft = Offset(
+        Canvas(modifier = Modifier.size(190.dp)) {
+            val strokeWidth    = 28.dp.toPx()
+            val glowWidth      = 36.dp.toPx()
+            val radius         = max(1f, (size.minDimension / 2f) - strokeWidth / 2f)
+            val topLeft        = Offset(
                 x = (size.width / 2f) - radius,
                 y = (size.height / 2f) - radius
             )
             val arcSize = Size(radius * 2f, radius * 2f)
 
-            // Fondo (arco completo 180°)
+            // Track (fondo)
             drawArc(
-                color = Color(0xFFE0E0E0),
+                color = DividerColor,
                 startAngle = 180f,
                 sweepAngle = 180f,
                 useCenter = false,
@@ -71,13 +82,25 @@ fun SemiCircleChart(
                 size = arcSize
             )
 
-            // Progreso
-            val sweep = (safeProgress / 100f) * 180f
-            if (sweep > 0f) {
+            // Glow del arco activo
+            if (animatedSweep > 0f) {
                 drawArc(
-                    color = color,
+                    color = displayColor.copy(alpha = 0.15f),
                     startAngle = 180f,
-                    sweepAngle = sweep,
+                    sweepAngle = animatedSweep,
+                    useCenter = false,
+                    style = Stroke(width = glowWidth, cap = StrokeCap.Round),
+                    topLeft = topLeft,
+                    size = arcSize
+                )
+            }
+
+            // Progreso principal
+            if (animatedSweep > 0f) {
+                drawArc(
+                    color = displayColor,
+                    startAngle = 180f,
+                    sweepAngle = animatedSweep,
                     useCenter = false,
                     style = Stroke(width = strokeWidth, cap = StrokeCap.Round),
                     topLeft = topLeft,
@@ -88,14 +111,14 @@ fun SemiCircleChart(
 
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.size(180.dp),
-            verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center
+            modifier = Modifier.size(190.dp),
+            verticalArrangement = Arrangement.Center
         ) {
             Text(
                 text = "$safeProgress%",
                 style = MaterialTheme.typography.headlineLarge,
                 fontWeight = FontWeight.Bold,
-                color = color
+                color = displayColor
             )
             if (label.isNotBlank()) {
                 Text(

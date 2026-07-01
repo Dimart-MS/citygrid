@@ -6,6 +6,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -48,6 +49,7 @@ class MainActivity : ComponentActivity() {
             CityGridTheme(darkTheme = false) {
                 Scaffold(
                     modifier = Modifier.fillMaxSize(),
+                    contentWindowInsets = WindowInsets(0, 0, 0, 0),
                     topBar = {
                         if (!onLogin) {
                             BloqueEncabezado(
@@ -72,7 +74,7 @@ class MainActivity : ComponentActivity() {
                     NavGraph(
                         navController = navController,
                         sessionManager = sessionManager,
-                        modifier = Modifier.padding(innerPadding)
+                        modifier = Modifier.padding(top = innerPadding.calculateTopPadding())
                     )
                 }
             }

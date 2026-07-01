@@ -2,25 +2,33 @@ package com.example.citygrid.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// ─── Paleta principal CityGrid ────────────────────────────────────────────
-val CityGridPrimary     = Color(0xFF00695C)   // Teal primario (botones, activos) - azulado
-val CityGridPrimaryLight = Color(0xFF4DB6AC)  // Teal claro (badges NORMAL)
-val CityGridPrimaryDark  = Color(0xFF003D34)  // Teal oscuro (header)
+// ─── Paleta principal CityGrid v2 ─────────────────────────────────────────────
+val CityGridPrimary      = Color(0xFF0EA5E9)   // Sky-500 — botones, activos, iconos
+val CityGridPrimaryLight = Color(0xFFE0F2FE)   // Sky-100 — fondos de badges/chips
+val CityGridPrimaryDark  = Color(0xFF0C2340)   // Navy profundo — header, nav bar
+val CityGridPrimaryMid   = Color(0xFF0369A1)   // Sky-700 — acentos secundarios
 
-// ─── Estados de sensores ──────────────────────────────────────────────────
-val StatusRed           = Color(0xFFE53935)   // LLENO / CRÍTICO
-val StatusYellow        = Color(0xFFFFC107)   // MEDIO / ADVERTENCIA
-val StatusGreen         = Color(0xFF4CAF50)   // VACÍO / NORMAL
-val StatusBlue          = Color(0xFF1E88E5)   // INFORMACIÓN
+// ─── Acento ámbar (alertas / alumbrado) ───────────────────────────────────────
+val AmberAccent          = Color(0xFFF59E0B)   // Amber-400 — alertas y condición día
+val AmberLight           = Color(0xFFFEF3C7)   // Amber-100 — fondos de badges ámbar
+val AmberDark            = Color(0xFFB45309)   // Amber-700 — texto sobre fondo ámbar
 
-// ─── Fondo y superficies ─────────────────────────────────────────────────
-val BackgroundLight     = Color(0xFFF5F7F5)
-val SurfaceCard         = Color(0xFFFFFFFF)
-val TextPrimary         = Color(0xFF1A1A1A)
-val TextSecondary       = Color(0xFF666666)
-val DividerColor        = Color(0xFFE0E0E0)
+// ─── Estados de sensores ──────────────────────────────────────────────────────
+val StatusRed            = Color(0xFFEF4444)   // Red-500   — LLENO / CRÍTICO
+val StatusYellow         = Color(0xFFF59E0B)   // Amber-400 — MEDIO / ADVERTENCIA
+val StatusGreen          = Color(0xFF10B981)   // Emerald-500 — VACÍO / NORMAL
+val StatusBlue           = Color(0xFF0EA5E9)   // Sky-500   — INFORMACIÓN / AUTO
 
-// ─── Tema oscuro ─────────────────────────────────────────────────────────
-val BackgroundDark      = Color(0xFF1A1A1A)
-val SurfaceDark         = Color(0xFF2A2A2A)
-val SurfaceVariantDark  = Color(0xFF3A3A3A)
+// ─── Fondo y superficies ─────────────────────────────────────────────────────
+val BackgroundLight      = Color(0xFFF0F7FF)   // Azul muy claro — fondo general
+val SurfaceCard          = Color(0xFFFFFFFF)   // Blanco puro — tarjetas principales
+val SurfaceElevated      = Color(0xFFF8FBFF)   // Azul-blanco — tarjetas en fondo
+val SurfaceContainer     = Color(0xFFEDF5FF)   // Contenedores con tono azulado
+val TextPrimary          = Color(0xFF0F172A)   // Slate-900 — texto principal
+val TextSecondary        = Color(0xFF64748B)   // Slate-500 — texto secundario
+val DividerColor         = Color(0xFFE2EBF5)   // Track/separadores azulados
+
+// ─── Tema oscuro ─────────────────────────────────────────────────────────────
+val BackgroundDark       = Color(0xFF0A0F1A)
+val SurfaceDark          = Color(0xFF111827)
+val SurfaceVariantDark   = Color(0xFF1E2D3D)

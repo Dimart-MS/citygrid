@@ -1,5 +1,11 @@
 package com.example.citygrid.ui.residuos
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -9,11 +15,14 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -31,8 +40,7 @@ import com.example.citygrid.model.TipoAlerta
 import com.example.citygrid.ui.components.BarraProgresoPersonalizada
 import com.example.citygrid.ui.components.ElementoEventoLista
 import com.example.citygrid.ui.components.IconoPersonalizado
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Warning
+import com.example.citygrid.ui.theme.*
 import kotlinx.coroutines.delay
 
 @Composable
@@ -44,10 +52,9 @@ fun ResiduosScreen(
     val maxContenedor by viewModel.maxContenedor.collectAsState()
     val criticalCount by viewModel.criticalContainersCount.collectAsState()
     val eventosRecientes by viewModel.eventosRecientes.collectAsState()
-    
+
     val scrollState = rememberScrollState()
 
-    // Ticker para refrescar dinámicamente los segundos de inactividad
     var currentTime by remember { mutableStateOf(System.currentTimeMillis()) }
     LaunchedEffect(state.conectado, state.ultimoMensajeTimestamp) {
         if (!state.conectado) {
@@ -60,15 +67,18 @@ fun ResiduosScreen(
 
     val segundosInactivo = ((currentTime - state.ultimoMensajeTimestamp) / 1000).coerceAtLeast(0)
 
-    // Cargar datos al entrar a la pantalla
     LaunchedEffect(Unit) {
         viewModel.cargarAlertas()
     }
 
+    // Stagger animation
+    var visible by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { visible = true }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF4F7F9))
+            .background(BackgroundLight)
     ) {
         Column(
             modifier = Modifier
@@ -78,83 +88,119 @@ fun ResiduosScreen(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
+                    .padding(horizontal = 20.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Spacer(modifier = Modifier.height(8.dp))
-                
-                Text(
-                    text = "Gestión de Residuos — CityGrid",
-                    color = Color(0xFF2D3748),
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(bottom = 4.dp)
-                )
 
-                // Banner superior de estado reactivo
-                BannerEstadoResiduos(criticalCount = criticalCount)
-                
-                // Alerta de Inactividad (ESP32 fuera de línea)
+                AnimatedVisibility(
+                    visible = visible,
+                    enter = fadeIn(tween(350)) + slideInVertically(tween(350)) { it / 3 }
+                ) {
+                    Text(
+                        text = "Gestión de Residuos",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        modifier = Modifier.padding(bottom = 4.dp)
+                    )
+                }
+
+                // Banner estado
+                AnimatedVisibility(
+                    visible = visible,
+                    enter = fadeIn(tween(400, delayMillis = 80)) + slideInVertically(tween(400, delayMillis = 80)) { it / 3 }
+                ) {
+                    BannerEstadoResiduos(criticalCount = criticalCount)
+                }
+
+                // Alerta de Inactividad
                 if (!state.conectado) {
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .border(1.dp, Color(0xFFE53E3E), RoundedCornerShape(12.dp)),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF5F5))
+                    AnimatedVisibility(
+                        visible = visible,
+                        enter = fadeIn(tween(300, delayMillis = 120))
                     ) {
-                        Row(
-                            modifier = Modifier.padding(16.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .border(1.dp, StatusRed, RoundedCornerShape(20.dp)),
+                            shape = RoundedCornerShape(20.dp),
+                            colors = CardDefaults.cardColors(containerColor = StatusRed.copy(alpha = 0.06f))
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.Warning,
-                                contentDescription = "Alerta de Inactividad",
-                                tint = Color(0xFFE53E3E),
-                                modifier = Modifier.size(24.dp)
-                            )
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Column {
-                                Text(
-                                    text = "Dispositivo Inactivo",
-                                    color = Color(0xFFC53030),
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 14.sp
+                            Row(
+                                modifier = Modifier.padding(16.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Warning,
+                                    contentDescription = "Alerta de Inactividad",
+                                    tint = StatusRed,
+                                    modifier = Modifier.size(24.dp)
                                 )
-                                Text(
-                                    text = "No se han recibido lecturas del ESP32 hace $segundosInactivo segundos.",
-                                    color = Color(0xFF742A2A),
-                                    fontSize = 12.sp
-                                )
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Column {
+                                    Text(
+                                        text = "Dispositivo Inactivo",
+                                        color = StatusRed,
+                                        style = MaterialTheme.typography.titleSmall,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                    Text(
+                                        text = "No se han recibido lecturas del ESP32 hace $segundosInactivo segundos.",
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
+                                }
                             }
                         }
                     }
                 }
-                
-                // Medidor semicircular del contenedor más lleno
-                TarjetaMedidor(maxContenedor = maxContenedor)
-                
-                Text(
-                    text = "CONTENEDORES MONITOREADOS",
-                    color = Color(0xFF718096),
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(vertical = 4.dp)
-                )
-                
-                // Listar contenedores dinámicamente desde el StateFlow
-                state.contenedores.forEach { contenedor ->
-                    TarjetaContenedor(contenedor = contenedor)
+
+                // Medidor
+                AnimatedVisibility(
+                    visible = visible,
+                    enter = fadeIn(tween(420, delayMillis = 160)) + slideInVertically(tween(420, delayMillis = 160)) { it / 3 }
+                ) {
+                    TarjetaMedidor(maxContenedor = maxContenedor)
                 }
-                
-                // Historial corto de eventos recientes
-                TarjetaEventosRecientesResiduos(
-                    eventos = eventosRecientes,
-                    onVerAlertas = onNavigateToAlerts
-                )
-                
+
+                AnimatedVisibility(
+                    visible = visible,
+                    enter = fadeIn(tween(300, delayMillis = 240))
+                ) {
+                    Text(
+                        text = "CONTENEDORES MONITOREADOS",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        letterSpacing = 0.8.sp,
+                        modifier = Modifier.padding(vertical = 4.dp)
+                    )
+                }
+
+                // Lista de contenedores con stagger
+                state.contenedores.forEachIndexed { index, contenedor ->
+                    AnimatedVisibility(
+                        visible = visible,
+                        enter = fadeIn(tween(420, delayMillis = 300 + index * 80)) +
+                                slideInVertically(tween(420, delayMillis = 300 + index * 80)) { it / 3 }
+                    ) {
+                        TarjetaContenedor(contenedor = contenedor)
+                    }
+                }
+
+                // Eventos recientes
+                AnimatedVisibility(
+                    visible = visible,
+                    enter = fadeIn(tween(420, delayMillis = 480)) + slideInVertically(tween(420, delayMillis = 480)) { it / 3 }
+                ) {
+                    TarjetaEventosRecientesResiduos(
+                        eventos = eventosRecientes,
+                        onVerAlertas = onNavigateToAlerts
+                    )
+                }
+
                 Spacer(modifier = Modifier.height(8.dp))
-                
+
                 val timeString = remember(state.contenedores) {
                     val maxTimestamp = state.contenedores.maxOfOrNull { it.ultimaActualizacion } ?: System.currentTimeMillis()
                     val sdf = java.text.SimpleDateFormat("dd/MM/yyyy · hh:mm a", java.util.Locale.getDefault())
@@ -162,12 +208,12 @@ fun ResiduosScreen(
                 }
                 Text(
                     text = "Última actualización: $timeString",
-                    color = Color(0xFF718096),
-                    fontSize = 11.sp,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.fillMaxWidth(),
                     textAlign = TextAlign.Center
                 )
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(110.dp))
             }
         }
     }
@@ -175,12 +221,19 @@ fun ResiduosScreen(
 
 @Composable
 fun BannerEstadoResiduos(criticalCount: Int) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF1F3540))
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(
+                Brush.linearGradient(
+                    colors = listOf(CityGridPrimaryDark, Color(0xFF0A3D62), Color(0xFF0D5A8C))
+                ),
+                RoundedCornerShape(22.dp)
+            )
+            .border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(22.dp))
+            .padding(20.dp)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 val dateString = remember {
                     val sdf = java.text.SimpleDateFormat("dd/MM/yyyy - HH:mm 'hrs'", java.util.Locale.getDefault())
@@ -188,53 +241,57 @@ fun BannerEstadoResiduos(criticalCount: Int) {
                 }
                 Text(
                     text = dateString,
-                    color = Color(0xFFCBD5E0),
-                    fontSize = 13.sp
+                    style = MaterialTheme.typography.labelMedium,
+                    color = Color.White.copy(alpha = 0.65f)
                 )
                 Spacer(modifier = Modifier.weight(1f))
                 if (criticalCount > 0) {
                     Box(
                         modifier = Modifier
-                            .background(Color(0xFFFFFAF0), RoundedCornerShape(12.dp))
-                            .border(1.dp, Color(0xFFDD6B20), RoundedCornerShape(12.dp))
-                            .padding(horizontal = 10.dp, vertical = 4.dp)
+                            .background(AmberAccent.copy(alpha = 0.15f), RoundedCornerShape(14.dp))
+                            .border(1.dp, AmberAccent.copy(alpha = 0.5f), RoundedCornerShape(14.dp))
+                            .padding(horizontal = 12.dp, vertical = 5.dp)
                     ) {
                         Text(
-                            text = "⚠ $criticalCount contenedor crítico" + if (criticalCount > 1) "s" else "",
-                            color = Color(0xFFD69E2E),
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 11.sp
+                            text = "⚠ $criticalCount crítico" + if (criticalCount > 1) "s" else "",
+                            color = AmberAccent,
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold
                         )
                     }
                 } else {
                     Box(
                         modifier = Modifier
-                            .background(Color(0xFFE6F7F0), RoundedCornerShape(12.dp))
-                            .border(1.dp, Color(0xFF00A896), RoundedCornerShape(12.dp))
-                            .padding(horizontal = 10.dp, vertical = 4.dp)
+                            .background(StatusGreen.copy(alpha = 0.12f), RoundedCornerShape(14.dp))
+                            .border(1.dp, StatusGreen.copy(alpha = 0.4f), RoundedCornerShape(14.dp))
+                            .padding(horizontal = 12.dp, vertical = 5.dp)
                     ) {
                         Text(
                             text = "✓ Sistema OK",
-                            color = Color(0xFF00A896),
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 11.sp
+                            color = StatusGreen,
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.SemiBold
                         )
                     }
                 }
             }
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(14.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
+                val statusColor = if (criticalCount > 0) AmberAccent else StatusGreen
+                val statusText = if (criticalCount > 0)
+                    "Atención requerida — Contenedor crítico"
+                else
+                    "Monitoreo activo — Todo en orden"
                 Box(
                     modifier = Modifier
                         .size(8.dp)
-                        .background(Color(0xFF00A896), CircleShape)
+                        .background(statusColor, CircleShape)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "Sistema de residuos activo",
+                    text = statusText,
                     color = Color.White,
-                    fontWeight = FontWeight.Medium,
-                    fontSize = 14.sp
+                    style = MaterialTheme.typography.labelMedium
                 )
             }
         }
@@ -245,7 +302,7 @@ fun BannerEstadoResiduos(criticalCount: Int) {
 fun TarjetaMedidor(maxContenedor: ContenedorData?) {
     val porcentaje = maxContenedor?.porcentaje ?: 0
     val nombre = maxContenedor?.nombre ?: "Sin Datos"
-    
+
     val status = when {
         porcentaje > 85 -> "Lleno — Requiere vaciado"
         porcentaje >= 50 -> "Medio — Nivel estable"
@@ -260,22 +317,27 @@ fun TarjetaMedidor(maxContenedor: ContenedorData?) {
         }
     )
 
+    val animatedPorcentaje by animateFloatAsState(
+        targetValue = porcentaje.toFloat(),
+        animationSpec = tween(durationMillis = 1200, easing = FastOutSlowInEasing),
+        label = "medidorPorcentaje"
+    )
+
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(16.dp)),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(22.dp),
+        colors = CardDefaults.cardColors(containerColor = SurfaceElevated),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.padding(20.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
                 text = "Nivel de Residuos — Contenedor más lleno",
-                color = Color(0xFF2D3748),
-                fontWeight = FontWeight.Bold,
-                fontSize = 14.sp,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.fillMaxWidth(),
                 textAlign = TextAlign.Start
             )
@@ -286,28 +348,43 @@ fun TarjetaMedidor(maxContenedor: ContenedorData?) {
                     .height(110.dp),
                 contentAlignment = Alignment.TopCenter
             ) {
-                DibujoMedidorSegmentado(porcentaje = porcentaje, colorActivo = progressColor)
+                DibujoMedidorSegmentado(porcentaje = animatedPorcentaje, colorActivo = progressColor)
                 Column(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .padding(bottom = 8.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text(text = "$porcentaje%", color = Color(0xFF2D3748), fontWeight = FontWeight.Bold, fontSize = 28.sp)
-                    Text(text = "Contenedor de $nombre", color = Color(0xFF718096), fontSize = 11.sp)
+                    Text(
+                        text = "${animatedPorcentaje.toInt()}%",
+                        style = MaterialTheme.typography.headlineLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = progressColor
+                    )
+                    Text(
+                        text = "Contenedor de $nombre",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(10.dp))
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center,
                 modifier = Modifier.fillMaxWidth()
             ) {
+                Box(
+                    modifier = Modifier
+                        .size(8.dp)
+                        .background(progressColor, CircleShape)
+                )
+                Spacer(Modifier.width(8.dp))
                 Text(
                     text = status,
                     color = progressColor,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 13.sp
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.SemiBold
                 )
             }
         }
@@ -315,7 +392,7 @@ fun TarjetaMedidor(maxContenedor: ContenedorData?) {
 }
 
 @Composable
-fun DibujoMedidorSegmentado(porcentaje: Int, colorActivo: Color) {
+fun DibujoMedidorSegmentado(porcentaje: Float, colorActivo: Color) {
     Canvas(
         modifier = Modifier
             .width(180.dp)
@@ -326,16 +403,34 @@ fun DibujoMedidorSegmentado(porcentaje: Int, colorActivo: Color) {
         val numSegments = 10
         val startAngle = 180f
         val totalSweep = 180f
-        val segmentSweep = (totalSweep / numSegments) * 0.8f
-        val gapSweep = (totalSweep / numSegments) * 0.2f
-        val strokeWidthPx = 14.dp.toPx()
+        val segmentSweep = (totalSweep / numSegments) * 0.80f
+        val gapSweep = (totalSweep / numSegments) * 0.20f
+        val strokeWidthPx = 16.dp.toPx()
 
-        // Determinar cuántos segmentos pintar según el porcentaje actual
-        val activeSegments = (porcentaje / 10).coerceIn(0, 10)
+        val activeSegments = (porcentaje / 10f).coerceIn(0f, 10f)
 
         for (i in 0 until numSegments) {
             val segStart = startAngle + i * (segmentSweep + gapSweep)
-            val color = if (i < activeSegments) colorActivo else Color(0xFFE2E8F0)
+            val color = when {
+                i < activeSegments.toInt() -> colorActivo
+                i == activeSegments.toInt() && activeSegments % 1f > 0f -> {
+                    val fraction = activeSegments % 1f
+                    colorActivo.copy(alpha = fraction)
+                }
+                else -> DividerColor.copy(alpha = 0.6f)
+            }
+            // Glow para segmentos activos
+            if (i < activeSegments.toInt()) {
+                drawArc(
+                    color = colorActivo.copy(alpha = 0.15f),
+                    startAngle = segStart,
+                    sweepAngle = segmentSweep,
+                    useCenter = false,
+                    style = Stroke(width = strokeWidthPx + 4.dp.toPx(), cap = StrokeCap.Round),
+                    size = size.copy(width = w - strokeWidthPx, height = (h * 2) - strokeWidthPx),
+                    topLeft = Offset(strokeWidthPx / 2f, strokeWidthPx / 2f)
+                )
+            }
             drawArc(
                 color = color,
                 startAngle = segStart,
@@ -358,77 +453,106 @@ fun TarjetaContenedor(contenedor: ContenedorData) {
     }
 
     val icon = when (contenedor.tipo.lowercase()) {
-        "plastico" -> "plastic"
+        "plastico"   -> "plastic"
         "inorganico" -> "trash"
-        "organico" -> "leaf"
-        else -> "trash"
+        "organico"   -> "leaf"
+        else         -> "trash"
     }
 
-    val (statusColor, statusBg, progressColor) = obtenerColoresContenedor(status)
+    val (_, _, progressColor) = obtenerColoresContenedor(status)
     val nameString = when (contenedor.tipo.lowercase()) {
-        "plastico" -> "Plástico"
+        "plastico"   -> "Plástico"
         "inorganico" -> "Inorgánico"
-        "organico" -> "Orgánico"
-        else -> contenedor.nombre
+        "organico"   -> "Orgánico"
+        else         -> contenedor.nombre
     }
 
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(16.dp)),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = SurfaceElevated),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        // Header de color semántico
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    Brush.horizontalGradient(
+                        colors = listOf(progressColor.copy(alpha = 0.12f), Color.Transparent)
+                    ),
+                    RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
+                )
+                .padding(horizontal = 16.dp, vertical = 14.dp)
+        ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
                     modifier = Modifier
-                        .size(36.dp)
-                        .background(statusBg.copy(alpha = 0.3f), CircleShape),
+                        .size(38.dp)
+                        .background(progressColor.copy(alpha = 0.15f), CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
                     IconoPersonalizado(name = icon, tint = progressColor)
                 }
                 Spacer(modifier = Modifier.width(12.dp))
-                Text(text = nameString, color = Color(0xFF2D3748), fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                Text(
+                    text = nameString,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
                 Spacer(modifier = Modifier.weight(1f))
-                Box(
-                    modifier = Modifier
-                        .background(statusBg, RoundedCornerShape(12.dp))
-                        .padding(horizontal = 10.dp, vertical = 4.dp)
-                ) {
-                    Text(text = status, color = statusColor, fontWeight = FontWeight.Bold, fontSize = 11.sp)
-                }
+                com.example.citygrid.ui.components.StatusBadge(estado = status)
             }
-            Spacer(modifier = Modifier.height(12.dp))
-            Text(
-                text = buildAnnotatedString {
-                    withStyle(style = SpanStyle(color = Color(0xFF2D3748), fontWeight = FontWeight.Bold, fontSize = 20.sp)) {
-                        append("${contenedor.porcentaje}")
-                    }
-                    withStyle(style = SpanStyle(color = Color(0xFF718096), fontSize = 13.sp)) {
-                        append(" % de capacidad")
-                    }
-                }
-            )
+        }
+
+        HorizontalDivider(color = DividerColor)
+
+        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = buildAnnotatedString {
+                        withStyle(style = SpanStyle(color = progressColor, fontWeight = FontWeight.Bold)) {
+                            append("${contenedor.porcentaje}")
+                        }
+                        withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.onSurfaceVariant)) {
+                            append(" % de capacidad")
+                        }
+                    },
+                    style = MaterialTheme.typography.bodyLarge
+                )
+                Text(
+                    text = "Libre: ${100 - contenedor.porcentaje}%",
+                    color = if (contenedor.porcentaje > 85) StatusRed else TextSecondary,
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
             Spacer(modifier = Modifier.height(10.dp))
             BarraProgresoPersonalizada(progress = contenedor.porcentaje / 100f, color = progressColor)
             Spacer(modifier = Modifier.height(10.dp))
-            
+
             val updateTime = remember(contenedor.ultimaActualizacion) {
                 val sdf = java.text.SimpleDateFormat("dd/MM/yyyy · hh:mm a", java.util.Locale.getDefault())
                 sdf.format(java.util.Date(contenedor.ultimaActualizacion))
             }
-            Text(text = "Última actualización: $updateTime", color = Color(0xFFA0AEC0), fontSize = 10.sp)
+            Text(
+                text = "Última actualización: $updateTime",
+                style = MaterialTheme.typography.labelSmall,
+                color = TextSecondary
+            )
         }
     }
 }
 
 private fun obtenerColoresContenedor(status: String): Triple<Color, Color, Color> {
     return when (status) {
-        "Lleno" -> Triple(Color(0xFFC53030), Color(0xFFFFF5F5), Color(0xFFE53E3E))
-        "Medio" -> Triple(Color(0xFFD69E2E), Color(0xFFFFFAF0), Color(0xFFECC94B))
-        else -> Triple(Color(0xFF00A896), Color(0xFFE6F7F0), Color(0xFF00A896))
+        "Lleno" -> Triple(StatusRed,    StatusRed.copy(alpha = 0.12f),    StatusRed)
+        "Medio" -> Triple(StatusYellow, StatusYellow.copy(alpha = 0.15f), StatusYellow)
+        else    -> Triple(StatusGreen,  StatusGreen.copy(alpha = 0.12f),  StatusGreen)
     }
 }
 
@@ -438,26 +562,25 @@ fun TarjetaEventosRecientesResiduos(
     onVerAlertas: () -> Unit
 ) {
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(16.dp)),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = SurfaceElevated),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     text = "Eventos recientes",
-                    color = Color(0xFF2D3748),
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 15.sp
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Spacer(modifier = Modifier.weight(1f))
                 Text(
                     text = "Historial ›",
-                    color = Color(0xFF00A8CC),
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 13.sp,
+                    color = CityGridPrimary,
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.clickable { onVerAlertas() }
                 )
             }
@@ -472,8 +595,8 @@ fun TarjetaEventosRecientesResiduos(
                 ) {
                     Text(
                         text = "No hay eventos recientes",
-                        color = Color(0xFF718096),
-                        fontSize = 13.sp
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = TextSecondary
                     )
                 }
             } else {
@@ -483,20 +606,21 @@ fun TarjetaEventosRecientesResiduos(
                         sdf.format(java.util.Date(evento.timestamp))
                     }
                     val dotColor = when (evento.tipo) {
-                        TipoAlerta.CRITICO -> Color(0xFFE53E3E)
-                        TipoAlerta.ADVERTENCIA -> Color(0xFFECC94B)
-                        TipoAlerta.INFORMACION -> Color(0xFF00A8CC)
-                        else -> Color(0xFF00A896)
+                        TipoAlerta.CRITICO     -> StatusRed
+                        TipoAlerta.ADVERTENCIA -> AmberAccent
+                        TipoAlerta.INFORMACION -> StatusBlue
+                        else                   -> StatusGreen
                     }
-
                     ElementoEventoLista(
                         title = evento.titulo,
                         subtitle = "${evento.tipo.name} · $timeString",
                         dotColor = dotColor
                     )
-                    
                     if (index < eventos.size - 1) {
-                        HorizontalDivider(color = Color(0xFFEDF2F7), modifier = Modifier.padding(vertical = 10.dp))
+                        HorizontalDivider(
+                            color = DividerColor,
+                            modifier = Modifier.padding(vertical = 10.dp)
+                        )
                     }
                 }
             }
