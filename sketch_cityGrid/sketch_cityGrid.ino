@@ -273,19 +273,22 @@ void callback(char* topic, byte* payload, unsigned int length) {
   int valor = message[0] - '0';
 
   if (strcmp(topic, TOPIC_CTRL_LUCES) == 0) {
-    modoManualLuz = true;
-    tiempoUltimaOrdenLuz = millis();
     if (valor == 1) {
+      modoManualLuz = true;
       digitalWrite(PIN_LEDS_EXT, HIGH);   
       setRelevador(true);  
       lucesEncendidas = true;
-      Serial.println(">> App: Comando Luces -> ENCENDER (MANUAL)");
+      Serial.println(">> App: Comando Luces -> ENCENDER (MANUAL INDEFINIDO)");
     } else if (valor == 0) {
+      modoManualLuz = true;
       digitalWrite(PIN_LEDS_EXT, LOW);    
       setRelevador(false);   
       lucesEncendidas = false;            
       tiempoOscuridad = 0;
-      Serial.println(">> App: Comando Luces -> APAGAR (MANUAL)");
+      Serial.println(">> App: Comando Luces -> APAGAR (MANUAL INDEFINIDO)");
+    } else if (valor == 2) {
+      modoManualLuz = false;
+      Serial.println(">> App: Comando Luces -> Regresar a AUTOMÁTICO");
     } else {
       Serial.print(">> App: Comando Luces -> Valor no reconocido: ");
       Serial.println(valor);
@@ -503,11 +506,8 @@ void loop() {
     int valorLuz = analogRead(PIN_LDR);
     bool cambioLuz = false;
 
-    // Si venció el tiempo de control manual, regresar a automático
-    if (modoManualLuz && (ahora - tiempoUltimaOrdenLuz >= TIEMPO_OVERRIDE_MANUAL_MS)) {
-      modoManualLuz = false;
-      Serial.println("Control manual de luces finalizado. Regresando a AUTOMÁTICO.");
-    }
+    // El control manual de las luces ahora es indefinido (sin temporizador de desactivación)
+    // El ESP32 se mantendrá en MANUAL u ordenará AUTO cuando el usuario cambie el interruptor de modo en la app.
 
     if (!modoManualLuz) {
       if (valorLuz < UMBRAL_LUZ_LDR) {

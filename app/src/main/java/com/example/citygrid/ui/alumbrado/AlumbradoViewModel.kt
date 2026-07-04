@@ -45,4 +45,20 @@ class AlumbradoViewModel : ViewModel() {
             )
         )
     }
+
+    fun cambiarModo(automatico: Boolean) {
+        val payload = if (automatico) "2" else {
+            if (MqttManager.alumbradoFlow.value.estadoOn) "1" else "0"
+        }
+        MqttManager.publish(Constants.TOPIC_CTRL_LUCES, payload)
+
+        // Actualización optimista inmediata
+        val currentState = MqttManager.alumbradoFlow.value
+        MqttManager.updateAlumbradoState(
+            currentState.copy(
+                modo = if (automatico) "AUTO" else "MANUAL",
+                ultimaActualizacion = System.currentTimeMillis()
+            )
+        )
+    }
 }

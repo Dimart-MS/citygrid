@@ -137,6 +137,70 @@ fun AlumbradoScreen(viewModel: AlumbradoViewModel = viewModel()) {
                 }
             }
 
+            // Tarjeta de Modo de Operación (AUTO / MANUAL)
+            AnimatedVisibility(
+                visible = visible,
+                enter = fadeIn(tween(400, delayMillis = 120)) + slideInVertically(tween(400, delayMillis = 120)) { it / 3 }
+            ) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(22.dp),
+                    colors = CardDefaults.cardColors(containerColor = SurfaceElevated),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(20.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                "MODO DE OPERACIÓN",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = TextSecondary,
+                                letterSpacing = 0.8.sp
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = if (state.modo == "AUTO") "Modo Automático Activo" else "Modo Manual / Forzado",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = if (state.modo == "AUTO") "Las luces responden al sensor de luz LDR." 
+                                       else "El sensor LDR está desactivado.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = TextSecondary
+                            )
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = if (state.modo == "AUTO") "AUTO" else "MANUAL",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = if (state.modo == "AUTO") CityGridPrimary else TextSecondary,
+                                modifier = Modifier.padding(end = 8.dp)
+                            )
+                            Switch(
+                                checked = (state.modo == "AUTO"),
+                                onCheckedChange = { viewModel.cambiarModo(it) },
+                                colors = SwitchDefaults.colors(
+                                    checkedThumbColor = Color.White,
+                                    checkedTrackColor = CityGridPrimary,
+                                    uncheckedThumbColor = Color.White,
+                                    uncheckedTrackColor = DividerColor,
+                                    uncheckedBorderColor = Color.Transparent
+                                ),
+                                modifier = Modifier.scale(0.85f)
+                            )
+                        }
+                    }
+                }
+            }
+
             // Tarjetas Estado + Condición
             AnimatedVisibility(
                 visible = visible,
