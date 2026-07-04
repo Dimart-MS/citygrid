@@ -15,11 +15,12 @@ import kotlinx.serialization.json.Json
 
 object AguaMqttProcessor {
     private val alertasReportadas = mutableMapOf<String, Boolean>()
+    private val json = Json { ignoreUnknownKeys = true }
 
     fun procesarMensaje(topic: String, payload: String, context: Context, scope: CoroutineScope) {
         scope.launch {
             try {
-                val data = Json.decodeFromString<AguaPayload>(payload)
+                val data = json.decodeFromString<AguaPayload>(payload)
                 val nivelTanque = data.nivelTanque ?: 50
                 val bombaActiva = data.bombaActiva ?: (nivelTanque < Constants.UMBRAL_AGUA_BAJO)
 

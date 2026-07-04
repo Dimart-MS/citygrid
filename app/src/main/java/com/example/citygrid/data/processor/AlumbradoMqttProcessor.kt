@@ -15,11 +15,12 @@ import kotlinx.serialization.json.Json
 
 object AlumbradoMqttProcessor {
     private val alertasReportadas = mutableMapOf<String, Boolean>()
+    private val json = Json { ignoreUnknownKeys = true }
 
     fun procesarMensaje(topic: String, payload: String, context: Context, scope: CoroutineScope) {
         scope.launch {
             try {
-                val data = Json.decodeFromString<AlumbradoPayload>(payload)
+                val data = json.decodeFromString<AlumbradoPayload>(payload)
                 val valorLdr = data.ldrLux ?: (if (data.estadoOn == true) 45 else 800)
                 val encendido = data.estadoOn ?: (valorLdr < Constants.UMBRAL_LUZ_ADC)
 
