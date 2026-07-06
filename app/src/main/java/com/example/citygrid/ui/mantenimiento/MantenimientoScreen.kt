@@ -31,6 +31,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.citygrid.data.SessionManager
 import com.example.citygrid.model.db.DbMantenimiento
 import com.example.citygrid.ui.components.CityGridTopBar
+import com.example.citygrid.ui.components.ShimmerPlaceholder
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Date
@@ -164,8 +165,42 @@ fun MantenimientoScreen() {
             }
 
             if (isLoading && mantenimientos.isEmpty()) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = CityGridPrimary)
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    repeat(3) {
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .border(1.dp, DividerColor, RoundedCornerShape(24.dp)),
+                            shape = RoundedCornerShape(24.dp),
+                            colors = CardDefaults.cardColors(containerColor = SurfaceElevated),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    ShimmerPlaceholder(width = 44.dp, height = 44.dp, shape = CircleShape)
+                                    Spacer(modifier = Modifier.width(14.dp))
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        ShimmerPlaceholder(width = 120.dp, height = 16.dp)
+                                        Spacer(modifier = Modifier.height(6.dp))
+                                        ShimmerPlaceholder(width = 180.dp, height = 12.dp)
+                                    }
+                                    Spacer(modifier = Modifier.width(10.dp))
+                                    Column(horizontalAlignment = Alignment.End) {
+                                        ShimmerPlaceholder(width = 60.dp, height = 12.dp)
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        ShimmerPlaceholder(width = 80.dp, height = 20.dp, shape = RoundedCornerShape(10.dp))
+                                    }
+                                }
+                                Spacer(modifier = Modifier.height(14.dp))
+                                ShimmerPlaceholder(height = 14.dp)
+                                Spacer(modifier = Modifier.height(6.dp))
+                                ShimmerPlaceholder(width = 220.dp, height = 14.dp)
+                            }
+                        }
+                    }
                 }
             } else if (mantenimientos.isEmpty()) {
                 Text("No hay mantenimientos registrados.", color = TextSecondary)
@@ -213,8 +248,10 @@ fun MantenimientoScreen() {
 @Composable
 fun TarjetaHistorialMantenimiento(mantenimiento: DbMantenimiento, responsable: String) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(1.dp, DividerColor, RoundedCornerShape(24.dp)),
+        shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = SurfaceElevated),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {

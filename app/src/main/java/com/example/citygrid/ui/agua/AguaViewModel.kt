@@ -26,9 +26,8 @@ class AguaViewModel : ViewModel() {
     fun cargarHistorial(idTanque: Int = 1) {
         viewModelScope.launch {
             try {
-                val lecturas = AguaRepository.obtenerLecturasPorTanque(idTanque)
-                val listaOrdenada = lecturas.sortedByDescending { it.fechaHora }
-                _historial.value = listaOrdenada
+                val lecturas = AguaRepository.obtenerUltimasLecturasAgua(idTanque, 50)
+                _historial.value = lecturas
             } catch (e: Exception) {
                 android.util.Log.e("AguaViewModel", "Error al cargar historial", e)
             }

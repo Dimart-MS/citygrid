@@ -4,7 +4,8 @@ data class ContenedorData(
     val nombre: String = "",
     val tipo: String = "",          // "Plastico", "Inorganico", "Organico"
     val porcentaje: Int = 0,
-    val ultimaActualizacion: Long = 0L
+    val ultimaActualizacion: Long = 0L,
+    val activo: Boolean = true
 )
 
 data class ResiduosState(

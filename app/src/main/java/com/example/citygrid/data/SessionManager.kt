@@ -16,7 +16,7 @@ class SessionManager(context: Context) {
             .putBoolean(Constants.KEY_SESION_ACTIVA, true)
             .putLong(Constants.KEY_ULTIMA_SYNC, System.currentTimeMillis())
             .apply()
-        idUsuario?.let { prefs.edit().putInt("id_usuario", it).apply() }
+        idUsuario?.let { prefs.edit().putInt(Constants.KEY_ID_USUARIO, it).apply() }
     }
 
     fun cerrarSesion() {
@@ -52,5 +52,5 @@ class SessionManager(context: Context) {
             .apply()
     }
 
-    fun getIdUsuario(): Int = prefs.getInt("id_usuario", 1)
+    fun getIdUsuario(): Int = prefs.getInt(Constants.KEY_ID_USUARIO, 1)
 }

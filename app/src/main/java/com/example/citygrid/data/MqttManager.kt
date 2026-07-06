@@ -68,6 +68,9 @@ object MqttManager {
     private val _alertasFlow = MutableStateFlow<List<Alerta>>(emptyList())
     val alertasFlow: StateFlow<List<Alerta>> = _alertasFlow.asStateFlow()
 
+    private val _statusFlow = MutableStateFlow(com.example.citygrid.model.StatusState())
+    val statusFlow: StateFlow<com.example.citygrid.model.StatusState> = _statusFlow.asStateFlow()
+
     // Métodos públicos para permitir a los procesadores actualizar el estado
     fun updateResiduosState(state: ResiduosState) {
         _residuosFlow.value = state
@@ -264,7 +267,8 @@ object MqttManager {
             Constants.TOPIC_RESIDUOS,
             Constants.TOPIC_AGUA,
             Constants.TOPIC_ALUMBRADO,
-            Constants.TOPIC_ALERTAS
+            Constants.TOPIC_ALERTAS,
+            Constants.TOPIC_STATUS
         )
         val qos = IntArray(topics.size) { 1 }
 
@@ -310,6 +314,11 @@ object MqttManager {
                     // --- Canal de Alertas Generales ---
                     Constants.TOPIC_ALERTAS -> {
                         AlertasMqttProcessor.procesarAlerta(payload, context)
+                    }
+
+                    // --- Diagnóstico de Estado / Heartbeat ---
+                    Constants.TOPIC_STATUS -> {
+                        procesarStatus(payload, context)
                     }
                 }
             } catch (e: Exception) {
@@ -431,6 +440,126 @@ object MqttManager {
             val listaActual = _alertasFlow.value.toMutableList()
             listaActual.add(0, nuevaAlerta)
             _alertasFlow.value = listaActual.take(20)
+        }
+    }
+
+    private fun procesarStatus(payload: String, context: Context) {
+        try {
+            val status = json.decodeFromString<com.example.citygrid.model.StatusState>(payload)
+            _statusFlow.value = status
+
+            if (status.estado.equals("OFFLINE", ignoreCase = true)) {
+                android.util.Log.w("MqttManager", "Dispositivo ESP32 reportó desconexión abrupta (LWT)")
+                
+                // Actualizar flujos para mostrar desconexión en la interfaz
+                val resState = _residuosFlow.value
+                val contenedoresActualizados = resState.contenedores.map { it.copy(activo = false) }
+                _residuosFlow.value = resState.copy(contenedores = contenedoresActualizados, conectado = false)
+                _aguaFlow.value = _aguaFlow.value.copy(conectado = false)
+                _alumbradoFlow.value = _alumbradoFlow.value.copy(conectado = false)
+
+                // Notificar caída inmediata
+                NotificationHelper.enviarNotificacion(
+                    context = context,
+                    tipo = TipoAlerta.ADVERTENCIA,
+                    titulo = "Dispositivo Fuera de Línea",
+                    mensaje = "Se ha perdido la conexión de red con el dispositivo ESP32."
+                )
+
+                // Registrar alerta en Supabase
+                scope.launch {
+                    val dbAlerta = DbAlerta(
+                        idSistema = 1, // General
+                        idTipoAlerta = 2, // ADVERTENCIA
+                        idEstadoAlerta = 1, // PENDIENTE
+                        descripcion = "Conexión LWT perdida con el dispositivo ESP32.",
+                        fechaHora = java.time.OffsetDateTime.now().toString()
+                    )
+                    AlertaRepository.insertarAlerta(dbAlerta)
+                }
+            } else {
+                // Registrar actividad si llega reporte de estado activo (ONLINE)
+                registrarActividadDispositivo(context)
+
+                // Evaluar salud de cada sensor físico individual
+                verificarSaludSensor(status.sensores.basPlastico, "Contenedor de Plástico", 1, context)
+                verificarSaludSensor(status.sensores.basInorganico, "Contenedor de Inorgánico", 1, context)
+                verificarSaludSensor(status.sensores.basOrganico, "Contenedor de Orgánico", 1, context)
+                verificarSaludSensor(status.sensores.nivelAgua, "Sensor del Depósito de Agua", 2, context)
+                verificarSaludSensor(status.sensores.ldrLuz, "Fotoresistencia LDR (Alumbrado)", 3, context)
+
+                // Actualizar el estado de conexión individual en cada flujo
+                val plasticoActivo = !status.sensores.basPlastico.equals("ERROR_DESCONECTADO", ignoreCase = true)
+                val inorganicoActivo = !status.sensores.basInorganico.equals("ERROR_DESCONECTADO", ignoreCase = true)
+                val organicoActivo = !status.sensores.basOrganico.equals("ERROR_DESCONECTADO", ignoreCase = true)
+                val aguaActivo = !status.sensores.nivelAgua.equals("ERROR_DESCONECTADO", ignoreCase = true)
+                val ldrActivo = !status.sensores.ldrLuz.equals("ERROR_DESCONECTADO", ignoreCase = true)
+
+                val resState = _residuosFlow.value
+                val contenedoresActualizados = resState.contenedores.map { contenedor ->
+                    when (contenedor.tipo.lowercase()) {
+                        "plastico" -> contenedor.copy(activo = plasticoActivo)
+                        "inorganico" -> contenedor.copy(activo = inorganicoActivo)
+                        "organico" -> contenedor.copy(activo = organicoActivo)
+                        else -> contenedor
+                    }
+                }
+                _residuosFlow.value = resState.copy(contenedores = contenedoresActualizados, conectado = true)
+                _aguaFlow.value = _aguaFlow.value.copy(conectado = aguaActivo)
+                _alumbradoFlow.value = _alumbradoFlow.value.copy(conectado = ldrActivo)
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("MqttManager", "Error al procesar mensaje de Status: $payload", e)
+        }
+    }
+
+    private fun verificarSaludSensor(estado: String, nombreSensor: String, idSistema: Int, context: Context) {
+        val claveAlerta = "sensor_fallo_${nombreSensor.replace(" ", "_")}"
+        if (estado.equals("ERROR_DESCONECTADO", ignoreCase = true)) {
+            if (alertasReportadas[claveAlerta] != true) {
+                alertasReportadas[claveAlerta] = true
+
+                // 1. Mostrar notificación push crítica
+                NotificationHelper.enviarNotificacion(
+                    context = context,
+                    tipo = TipoAlerta.CRITICO,
+                    titulo = "Fallo de Hardware: $nombreSensor",
+                    mensaje = "El sensor físico de $nombreSensor está desconectado o averiado. Requiere mantenimiento."
+                )
+
+                // 2. Registrar en base de datos
+                scope.launch {
+                    val dbAlerta = DbAlerta(
+                        idSistema = idSistema,
+                        idTipoAlerta = 1, // CRÍTICO
+                        idEstadoAlerta = 1, // PENDIENTE
+                        descripcion = "Fallo de Hardware detectado en: $nombreSensor (Sensor desconectado/averiado)",
+                        fechaHora = java.time.OffsetDateTime.now().toString()
+                    )
+                    AlertaRepository.insertarAlerta(dbAlerta)
+                }
+            }
+        } else {
+            // Si volvió a estar OK y antes estaba en fallo, reportar recuperación
+            if (alertasReportadas[claveAlerta] == true) {
+                alertasReportadas[claveAlerta] = false
+                NotificationHelper.enviarNotificacion(
+                    context = context,
+                    tipo = TipoAlerta.NORMAL,
+                    titulo = "Sensor Recuperado",
+                    mensaje = "El sensor físico de $nombreSensor ha vuelto a operar correctamente."
+                )
+                scope.launch {
+                    val dbAlerta = DbAlerta(
+                        idSistema = idSistema,
+                        idTipoAlerta = 4, // NORMAL
+                        idEstadoAlerta = 2, // ATENDIDA
+                        descripcion = "Sensor $nombreSensor recuperado con éxito",
+                        fechaHora = java.time.OffsetDateTime.now().toString()
+                    )
+                    AlertaRepository.insertarAlerta(dbAlerta)
+                }
+            }
         }
     }
 }

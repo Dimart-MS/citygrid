@@ -3,6 +3,7 @@ package com.example.citygrid.ui.alertas
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.citygrid.data.MqttManager
+import com.example.citygrid.data.SessionManager
 import com.example.citygrid.data.SupabaseManager
 import com.example.citygrid.data.repository.AlertaRepository
 import com.example.citygrid.data.repository.BitacoraRepository
@@ -19,7 +20,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-class AlertasViewModel : ViewModel() {
+class AlertasViewModel(private val sessionManager: SessionManager) : ViewModel() {
 
     private val _selectedFilter = MutableStateFlow("Todas")
     val selectedFilter: StateFlow<String> = _selectedFilter.asStateFlow()
@@ -144,7 +145,7 @@ class AlertasViewModel : ViewModel() {
                 android.util.Log.d("AlertasViewModel", "Alerta $idLong marcada como atendida exitosamente.")
                 // Registrar en la bitácora del sistema
                 BitacoraRepository.registrar(
-                    idUsuario = 0, // TODO: pasar SessionManager al ViewModel si se requiere el ID real
+                    idUsuario = sessionManager.getIdUsuario(),
                     accion = "ALERTA_ATENDIDA",
                     descripcion = "Alerta id=$idLong marcada como atendida"
                 )

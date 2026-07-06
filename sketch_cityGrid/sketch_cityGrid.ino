@@ -31,20 +31,15 @@
 #include <WiFi.h>
 #include <PubSubClient.h>
 #include <WiFiClientSecure.h>
+#include <WiFiManager.h>
 
 // ============================================================
-//  CREDENCIALES WiFi
+//  CREDENCIALES WiFi & MQTT (Configurables vía WiFiManager)
 // ============================================================
-const char* ssid     = "MEGACABLE-CE9D";
-const char* password = "uEVBbz8c";
-
-// ============================================================
-//  CREDENCIALES MQTT (HiveMQ Cloud)
-// ============================================================
-const char* mqtt_server   = "7616ccef7e334086bf74b6bb92340be3.s1.eu.hivemq.cloud";
-const int   mqtt_port     = 8883;
-const char* mqtt_username = "CityGrid";
-const char* mqtt_password = "CityGridPasswordSec1";
+char mqtt_server[80]   = "7616ccef7e334086bf74b6bb92340be3.s1.eu.hivemq.cloud";
+int  mqtt_port         = 8883;
+char mqtt_username[40] = "CityGrid";
+char mqtt_password[40] = "CityGridPasswordSec1";
 
 // ============================================================
 //  TOPICS — MODIFICA AQUÍ SI NECESITAS CAMBIARLOS
@@ -202,36 +197,79 @@ unsigned long ultimoIntentoReconexion = 0;
 unsigned long tiempoUltimaLecturaSensores = 0;
 const long INTERVALO_LECTURA_SENSORES = 1000; // Leer sensores cada 1 segundo (no bloqueante)
 
+// Variables para detección de fallos de hardware en sensores
+int fallosBasura1 = 0;
+int fallosBasura2 = 0;
+int fallosBasura3 = 0;
+int fallosAgua = 0;
+const int MAX_FALLOS = 5; // Límite de fallos consecutivos antes de marcar como averiado
+
+// LDR Estático (Detección de desconexión)
+int ultimoValorLuz = -1;
+int conteoValorLuzEstatico = 0;
+bool ldrConFallo = false;
+
 // ============================================================
 //  FUNCIÓN: Medir distancia con HC-SR04
 // ============================================================
 long medirDistancia(int pinTrig, int pinEcho) {
-  digitalWrite(pinTrig, LOW);
-  delayMicroseconds(2);
-  digitalWrite(pinTrig, HIGH);
-  delayMicroseconds(10);
-  digitalWrite(pinTrig, LOW);
+  const int NUM_LECTURAS = 5;
+  long sumaDistancia = 0;
+  int lecturasValidas = 0;
 
-  long duracion = pulseIn(pinEcho, HIGH, 30000);
-  long distancia = duracion * 0.034 / 2;
-  
-  // Filtro de ruido y error de lectura (distancias imposibles o timeout de pulseIn)
-  if (distancia <= 0 || distancia > 100) {
+  for (int i = 0; i < NUM_LECTURAS; i++) {
+    digitalWrite(pinTrig, LOW);
+    delayMicroseconds(2);
+    digitalWrite(pinTrig, HIGH);
+    delayMicroseconds(10);
+    digitalWrite(pinTrig, LOW);
+
+    long duracion = pulseIn(pinEcho, HIGH, 30000);
+    long distancia = duracion * 0.034 / 2;
+
+    if (distancia > 0 && distancia <= 100) {
+      sumaDistancia += distancia;
+      lecturasValidas++;
+    }
+    delay(10); // Breve espera para evitar ecos cruzados
+  }
+
+  if (lecturasValidas == 0) {
     return -1; // -1 indica lectura inválida / fuera de rango
   }
-  return distancia;
+  return sumaDistancia / lecturasValidas;
 }
 
 void setup_wifi() {
-  delay(10);
-  Serial.println();
-  Serial.print("Conectando a WiFi: ");
-  Serial.println(ssid);
-  WiFi.begin(ssid, password);
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
+  WiFiManager wm;
+  
+  // Parámetros personalizados para configurar el broker MQTT desde la web del portal
+  WiFiManagerParameter custom_mqtt_server("server", "MQTT Server", mqtt_server, 80);
+  char portStr[6];
+  itoa(mqtt_port, portStr, 10);
+  WiFiManagerParameter custom_mqtt_port("port", "MQTT Port", portStr, 6);
+  WiFiManagerParameter custom_mqtt_user("user", "MQTT Username", mqtt_username, 40);
+  WiFiManagerParameter custom_mqtt_pass("pass", "MQTT Password", mqtt_password, 40);
+
+  wm.addParameter(&custom_mqtt_server);
+  wm.addParameter(&custom_mqtt_port);
+  wm.addParameter(&custom_mqtt_user);
+  wm.addParameter(&custom_mqtt_pass);
+
+  Serial.println("Iniciando autoConnect de WiFiManager...");
+  // Si no se puede conectar al WiFi guardado, levanta la red "CityGrid_Config_AP"
+  if (!wm.autoConnect("CityGrid_Config_AP")) {
+    Serial.println("Fallo al conectar WiFi. Reiniciando...");
+    delay(3000);
+    ESP.restart();
   }
+
+  // Recuperar valores del portal cautivo
+  strncpy(mqtt_server, custom_mqtt_server.getValue(), sizeof(mqtt_server));
+  mqtt_port = atoi(custom_mqtt_port.getValue());
+  strncpy(mqtt_username, custom_mqtt_user.getValue(), sizeof(mqtt_username));
+  strncpy(mqtt_password, custom_mqtt_pass.getValue(), sizeof(mqtt_password));
+
   Serial.println("\nWiFi conectado. IP: ");
   Serial.println(WiFi.localIP());
 
@@ -320,10 +358,20 @@ void reconnectNonBlocking() {
     ultimoIntentoReconexion = ahora;
     Serial.print("Intentando reconexión a MQTT HiveMQ...");
     
-    // Conectar usando un Client ID único combinando la MAC o un número aleatorio
-    String clientId = "ESP32Client_CityGrid_" + String(random(1000, 9999));
-    if (client.connect(clientId.c_str(), mqtt_username, mqtt_password)) {
+    // Conectar usando un Client ID único basado en la MAC física del ESP32
+    String mac = WiFi.macAddress();
+    mac.replace(":", "");
+    String clientId = "ESP32Client_" + mac;
+    
+    // Configuración LWT (MQTT Last Will and Testament)
+    const char* LWT_TOPIC = "citygrid/status";
+    const char* LWT_MSG = "{\"estado\":\"OFFLINE\"}";
+
+    if (client.connect(clientId.c_str(), mqtt_username, mqtt_password, LWT_TOPIC, 1, true, LWT_MSG)) {
       Serial.println(" ¡CONECTADO!");
+      
+      // Publicar estado ONLINE de inmediato al reconectar
+      client.publish(LWT_TOPIC, "{\"estado\":\"ONLINE\"}", true);
       
       // Suscribirse a los tópicos de control de actuadores
       bool subLuces = client.subscribe(TOPIC_CTRL_LUCES);
@@ -396,11 +444,16 @@ void loop() {
     tiempoUltimaLecturaSensores = ahora;
 
     // ----------------------------------------------------------
-    // LECTURA DE SENSORES
+    // LECTURA DE SENSORES Y DETECCIÓN DE FALLOS
     // ----------------------------------------------------------
     long distB1 = medirDistancia(TRIG_BASURA1, ECHO_BASURA1);
+    if (distB1 == -1) fallosBasura1++; else fallosBasura1 = 0;
+
     long distB2 = medirDistancia(TRIG_BASURA2, ECHO_BASURA2);
+    if (distB2 == -1) fallosBasura2++; else fallosBasura2 = 0;
+
     long distB3 = medirDistancia(TRIG_BASURA3, ECHO_BASURA3);
+    if (distB3 == -1) fallosBasura3++; else fallosBasura3 = 0;
 
     // ----------------------------------------------------------
     // LOGICA LOCAL (LEDs indicadores si están llenos)
@@ -504,6 +557,18 @@ void loop() {
     //  SENSOR DE LUZ (LDR) — Enciende LEDs exteriores y relevador
     // ----------------------------------------------------------
     int valorLuz = analogRead(PIN_LDR);
+    if (valorLuz == 0 || valorLuz == 4095) {
+      if (valorLuz == ultimoValorLuz) {
+        conteoValorLuzEstatico++;
+      } else {
+        conteoValorLuzEstatico = 1;
+      }
+    } else {
+      conteoValorLuzEstatico = 0;
+    }
+    ultimoValorLuz = valorLuz;
+    ldrConFallo = (conteoValorLuzEstatico >= 10);
+
     bool cambioLuz = false;
 
     // El control manual de las luces ahora es indefinido (sin temporizador de desactivación)
@@ -552,6 +617,8 @@ void loop() {
     //  SENSOR DE AGUA — Activa bomba de riego
     // ----------------------------------------------------------
     long distAgua = medirDistancia(TRIG_AGUA, ECHO_AGUA);
+    if (distAgua == -1) fallosAgua++; else fallosAgua = 0;
+
     bool bombaActivaAnterior = (digitalRead(PIN_BOMBA) == HIGH);
     bool bombaActiva = bombaActivaAnterior;
 
@@ -587,6 +654,28 @@ void loop() {
       tiempoUltimoReporteAgua = ahora;
       Serial.print("Publicado JSON Agua: ");
       Serial.println(jsonAgua);
+    }
+
+    // ----------------------------------------------------------
+    // PUBLICAR JSON DE ESTADO (HEARTBEAT / DIAGNÓSTICO)
+    // ----------------------------------------------------------
+    static unsigned long tiempoUltimoStatus = 0;
+    if ((ahora - tiempoUltimoStatus >= 15000) && client.connected()) {
+      tiempoUltimoStatus = ahora;
+      char jsonStatus[256];
+      snprintf(jsonStatus, sizeof(jsonStatus),
+               "{\"estado\":\"ONLINE\",\"uptime\":%lu,\"rssi\":%d,\"sensores\":{\"basPlastico\":\"%s\",\"basInorganico\":\"%s\",\"basOrganico\":\"%s\",\"nivelAgua\":\"%s\",\"ldrLuz\":\"%s\"}}",
+               ahora / 1000,
+               WiFi.RSSI(),
+               (fallosBasura1 >= MAX_FALLOS) ? "ERROR_DESCONECTADO" : "OK",
+               (fallosBasura2 >= MAX_FALLOS) ? "ERROR_DESCONECTADO" : "OK",
+               (fallosBasura3 >= MAX_FALLOS) ? "ERROR_DESCONECTADO" : "OK",
+               (fallosAgua >= MAX_FALLOS) ? "ERROR_DESCONECTADO" : "OK",
+               ldrConFallo ? "ERROR_DESCONECTADO" : "OK"
+      );
+      client.publish("citygrid/status", jsonStatus, true);
+      Serial.print("Publicado JSON Diagnóstico: ");
+      Serial.println(jsonStatus);
     }
   }
 }

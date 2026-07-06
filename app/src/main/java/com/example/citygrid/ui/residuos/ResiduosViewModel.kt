@@ -16,14 +16,15 @@ class ResiduosViewModel : ViewModel() {
 
     val residuosState: StateFlow<ResiduosState> = MqttManager.residuosFlow
 
-    // Contenedor más lleno calculado reactivamente
+    // Contenedor más lleno calculado reactivamente (priorizando activos)
     val maxContenedor: StateFlow<ContenedorData?> = residuosState.map { state ->
-        state.contenedores.maxByOrNull { it.porcentaje }
+        state.contenedores.filter { it.activo }.maxByOrNull { it.porcentaje }
+            ?: state.contenedores.maxByOrNull { it.porcentaje }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
-    // Cantidad de contenedores en estado crítico (>85%)
+    // Cantidad de contenedores activos en estado crítico (>85%)
     val criticalContainersCount: StateFlow<Int> = residuosState.map { state ->
-        state.contenedores.count { it.porcentaje > 85 }
+        state.contenedores.count { it.activo && it.porcentaje > 85 }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 
     // Alertas y eventos recientes para el módulo de residuos (Combina DB + MQTT)

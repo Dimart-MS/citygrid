@@ -31,9 +31,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.delay
 import com.example.citygrid.model.db.DbLecturaAgua
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
+import com.example.citygrid.ui.components.TarjetaAdvertenciaConectividad
+import com.example.citygrid.ui.components.bounceClick
 
 import com.example.citygrid.ui.theme.CityGridPrimary
 import com.example.citygrid.ui.theme.CityGridPrimaryDark
@@ -54,6 +57,18 @@ fun AguaScreen(viewModel: AguaViewModel = viewModel()) {
     val state by viewModel.aguaState.collectAsState()
     val historial by viewModel.historial.collectAsState()
     var mostrarHistorial by remember { mutableStateOf(false) }
+
+    var currentTime by remember { mutableStateOf(System.currentTimeMillis()) }
+    LaunchedEffect(state.conectado, state.ultimaActualizacion) {
+        if (!state.conectado) {
+            while (true) {
+                currentTime = System.currentTimeMillis()
+                delay(1000)
+            }
+        }
+    }
+
+    val segundosInactivo = ((currentTime - state.ultimaActualizacion) / 1000).coerceAtLeast(0)
 
     var visible by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { visible = true }
@@ -97,9 +112,9 @@ fun AguaScreen(viewModel: AguaViewModel = viewModel()) {
                             Brush.linearGradient(
                                 colors = listOf(CityGridPrimaryDark, Color(0xFF0A3D62), Color(0xFF0D5A8C))
                             ),
-                            RoundedCornerShape(22.dp)
+                            RoundedCornerShape(24.dp)
                         )
-                        .border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(22.dp))
+                        .border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(24.dp))
                         .padding(20.dp)
                 ) {
                     Column {
@@ -138,14 +153,26 @@ fun AguaScreen(viewModel: AguaViewModel = viewModel()) {
                 }
             }
 
+            // Alerta de Inactividad
+            if (!state.conectado) {
+                AnimatedVisibility(
+                    visible = visible,
+                    enter = fadeIn(tween(300, delayMillis = 120))
+                ) {
+                    TarjetaAdvertenciaConectividad(segundosInactivo = segundosInactivo)
+                }
+            }
+
             // Tarjeta nivel del tanque
             AnimatedVisibility(
                 visible = visible,
                 enter = fadeIn(tween(400, delayMillis = 160)) + slideInVertically(tween(400, delayMillis = 160)) { it / 3 }
             ) {
                 Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(22.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .border(1.dp, DividerColor, RoundedCornerShape(24.dp)),
+                    shape = RoundedCornerShape(24.dp),
                     colors = CardDefaults.cardColors(containerColor = SurfaceElevated),
                     elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                 ) {
@@ -162,20 +189,20 @@ fun AguaScreen(viewModel: AguaViewModel = viewModel()) {
                                 "${state.nivelTanque}%",
                                 style = MaterialTheme.typography.headlineMedium,
                                 fontWeight = FontWeight.Bold,
-                                color = CityGridPrimary
+                                color = if (state.conectado) CityGridPrimary else Color.Gray
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Icon(
                                 Icons.Default.WaterDrop,
                                 contentDescription = null,
-                                tint = CityGridPrimary,
+                                tint = if (state.conectado) CityGridPrimary else Color.Gray,
                                 modifier = Modifier.size(28.dp)
                             )
                             Spacer(modifier = Modifier.width(16.dp))
                             LinearProgressIndicator(
                                 progress = { state.nivelTanque / 100f },
                                 modifier = Modifier.fillMaxWidth().height(12.dp),
-                                color = CityGridPrimary,
+                                color = if (state.conectado) CityGridPrimary else Color.Gray,
                                 trackColor = DividerColor,
                                 strokeCap = StrokeCap.Round
                             )
@@ -229,8 +256,10 @@ fun AguaScreen(viewModel: AguaViewModel = viewModel()) {
                 enter = fadeIn(tween(400, delayMillis = 240)) + slideInVertically(tween(400, delayMillis = 240)) { it / 3 }
             ) {
                 Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(22.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .border(1.dp, DividerColor, RoundedCornerShape(24.dp)),
+                    shape = RoundedCornerShape(24.dp),
                     colors = CardDefaults.cardColors(containerColor = SurfaceElevated),
                     elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                 ) {
@@ -246,13 +275,18 @@ fun AguaScreen(viewModel: AguaViewModel = viewModel()) {
                             modifier = Modifier.align(Alignment.Start)
                         )
                         Spacer(modifier = Modifier.height(16.dp))
-                        val labelNivel = when {
-                            state.nivelTanque >= 50 -> "Nivel adecuado"
-                            state.nivelTanque >= 20 -> "Nivel bajo"
-                            else -> "Nivel crítico"
+                        val labelNivel = if (state.conectado) {
+                            when {
+                                state.nivelTanque >= 50 -> "Nivel adecuado"
+                                state.nivelTanque >= 20 -> "Nivel bajo"
+                                else -> "Nivel crítico"
+                            }
+                        } else {
+                            "Sensor Desconectado"
                         }
                         SemiCircleChartAgua(
                             porcentaje = state.nivelTanque,
+                            conectado = state.conectado,
                             label = labelNivel
                         )
                     }
@@ -265,8 +299,10 @@ fun AguaScreen(viewModel: AguaViewModel = viewModel()) {
                 enter = fadeIn(tween(400, delayMillis = 320)) + slideInVertically(tween(400, delayMillis = 320)) { it / 3 }
             ) {
                 Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(22.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .border(1.dp, DividerColor, RoundedCornerShape(24.dp)),
+                    shape = RoundedCornerShape(24.dp),
                     colors = CardDefaults.cardColors(containerColor = SurfaceElevated),
                     elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                 ) {
@@ -291,8 +327,14 @@ fun AguaScreen(viewModel: AguaViewModel = viewModel()) {
                 enter = fadeIn(tween(400, delayMillis = 400)) + slideInVertically(tween(400, delayMillis = 400)) { it / 3 }
             ) {
                 Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(22.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .border(
+                            width = 1.dp,
+                            color = if (state.bombaActiva) StatusGreen.copy(alpha = 0.3f) else DividerColor,
+                            shape = RoundedCornerShape(24.dp)
+                        ),
+                    shape = RoundedCornerShape(24.dp),
                     colors = CardDefaults.cardColors(
                         containerColor = if (state.bombaActiva)
                             StatusGreen.copy(alpha = 0.06f)
@@ -425,14 +467,19 @@ fun AguaScreen(viewModel: AguaViewModel = viewModel()) {
 @Composable
 fun SemiCircleChartAgua(
     porcentaje: Int,
+    conectado: Boolean,
     modifier: Modifier = Modifier,
     label: String = ""
 ) {
     val safeProgress = porcentaje.coerceIn(0, 100)
-    val color = when {
-        safeProgress >= 50 -> CityGridPrimary
-        safeProgress >= 20 -> StatusYellow
-        else               -> StatusRed
+    val color = if (conectado) {
+        when {
+            safeProgress >= 50 -> CityGridPrimary
+            safeProgress >= 20 -> StatusYellow
+            else               -> StatusRed
+        }
+    } else {
+        Color.Gray
     }
 
     val animatedSweep by animateFloatAsState(

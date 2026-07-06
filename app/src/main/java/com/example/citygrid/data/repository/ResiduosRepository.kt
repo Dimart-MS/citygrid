@@ -4,6 +4,7 @@ import com.example.citygrid.data.SupabaseManager
 import com.example.citygrid.model.db.DbContenedor
 import com.example.citygrid.model.db.DbLecturaResiduo
 import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.postgrest.query.Order
 import io.github.jan.supabase.realtime.selectAsFlow
 import io.github.jan.supabase.annotations.SupabaseExperimental
 import kotlinx.coroutines.flow.Flow
@@ -50,8 +51,19 @@ object ResiduosRepository {
     }
 
     suspend fun obtenerUltimaLectura(idContenedor: Int): DbLecturaResiduo? {
-        val lecturas = obtenerLecturasPorContenedor(idContenedor)
-        return lecturas.maxByOrNull { it.idLecturaResiduo ?: 0L }
+        return try {
+            SupabaseManager.client
+                .from("lecturasresiduos")
+                .select {
+                    filter { eq("idcontenedor", idContenedor) }
+                    order("idlecturaresiduo", Order.DESCENDING)
+                    limit(1)
+                }
+                .decodeSingleOrNull<DbLecturaResiduo>()
+        } catch (e: Exception) {
+            android.util.Log.e("ResiduosRepository", "Error al obtener última lectura de residuo", e)
+            null
+        }
     }
 
     @OptIn(SupabaseExperimental::class)

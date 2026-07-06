@@ -24,7 +24,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.citygrid.data.SessionManager
 import com.example.citygrid.model.Alerta
 import com.example.citygrid.model.TipoAlerta
 import com.example.citygrid.ui.theme.AmberAccent
@@ -45,7 +47,10 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 @Composable
-fun AlertasScreen(viewModel: AlertasViewModel = viewModel()) {
+fun AlertasScreen() {
+    val context = LocalContext.current
+    val sessionManager = remember { SessionManager(context) }
+    val viewModel: AlertasViewModel = viewModel { AlertasViewModel(sessionManager) }
     val listAlertas by viewModel.filteredAlertas.collectAsState()
     val activeFilter by viewModel.selectedFilter.collectAsState()
     val criticalCount by viewModel.criticalCount.collectAsState()

@@ -1,9 +1,10 @@
-﻿package com.example.citygrid.data.repository
+package com.example.citygrid.data.repository
 
 import android.util.Log
 import com.example.citygrid.data.SupabaseManager
 import com.example.citygrid.model.db.DbBitacoraSistema
 import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.postgrest.query.Order
 import java.time.OffsetDateTime
 import java.time.ZoneOffset
 
@@ -51,10 +52,11 @@ object BitacoraRepository {
         return try {
             SupabaseManager.client
                 .from("bitacorasistema")
-                .select()
+                .select {
+                    order("fechahora", Order.DESCENDING)
+                    limit(limite.toLong())
+                }
                 .decodeList<DbBitacoraSistema>()
-                .sortedByDescending { it.fechaHora }
-                .take(limite)
         } catch (e: Exception) {
             Log.e(TAG, "Error al cargar bitácora", e)
             emptyList()

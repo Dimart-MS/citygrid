@@ -29,6 +29,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.citygrid.model.db.DbLecturaLuminaria
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
+import kotlinx.coroutines.delay
+import com.example.citygrid.ui.components.TarjetaAdvertenciaConectividad
+import com.example.citygrid.ui.components.bounceClick
 
 import com.example.citygrid.ui.theme.CityGridPrimary
 import com.example.citygrid.ui.theme.CityGridPrimaryDark
@@ -53,6 +56,18 @@ fun AlumbradoScreen(viewModel: AlumbradoViewModel = viewModel()) {
     val state by viewModel.alumbradoState.collectAsState()
     val historial by viewModel.historial.collectAsState()
     var mostrarHistorial by remember { mutableStateOf(false) }
+
+    var currentTime by remember { mutableStateOf(System.currentTimeMillis()) }
+    LaunchedEffect(state.conectado, state.ultimaActualizacion) {
+        if (!state.conectado) {
+            while (true) {
+                currentTime = System.currentTimeMillis()
+                delay(1000)
+            }
+        }
+    }
+
+    val segundosInactivo = ((currentTime - state.ultimaActualizacion) / 1000).coerceAtLeast(0)
 
     var visible by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { visible = true }
@@ -96,9 +111,9 @@ fun AlumbradoScreen(viewModel: AlumbradoViewModel = viewModel()) {
                             Brush.linearGradient(
                                 colors = listOf(CityGridPrimaryDark, Color(0xFF0A3D62), Color(0xFF0D5A8C))
                             ),
-                            RoundedCornerShape(22.dp)
+                            RoundedCornerShape(24.dp)
                         )
-                        .border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(22.dp))
+                        .border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(24.dp))
                         .padding(20.dp)
                 ) {
                     Column {
@@ -122,18 +137,36 @@ fun AlumbradoScreen(viewModel: AlumbradoViewModel = viewModel()) {
                                 modifier = Modifier
                                     .size(8.dp)
                                     .background(
-                                        if (state.estadoOn) AmberAccent else StatusRed,
+                                        if (state.conectado) {
+                                            if (state.estadoOn) AmberAccent else StatusRed
+                                        } else {
+                                            Color.Gray
+                                        },
                                         CircleShape
                                     )
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = if (state.estadoOn) "Sistema de alumbrado activo" else "Sistema inactivo",
+                                text = if (state.conectado) {
+                                    if (state.estadoOn) "Sistema de alumbrado activo" else "Sistema inactivo"
+                                } else {
+                                    "Sensor Desconectado"
+                                },
                                 color = Color.White,
                                 fontWeight = FontWeight.SemiBold
                             )
                         }
                     }
+                }
+            }
+
+            // Alerta de Inactividad
+            if (!state.conectado) {
+                AnimatedVisibility(
+                    visible = visible,
+                    enter = fadeIn(tween(300, delayMillis = 100))
+                ) {
+                    TarjetaAdvertenciaConectividad(segundosInactivo = segundosInactivo)
                 }
             }
 
@@ -143,8 +176,10 @@ fun AlumbradoScreen(viewModel: AlumbradoViewModel = viewModel()) {
                 enter = fadeIn(tween(400, delayMillis = 120)) + slideInVertically(tween(400, delayMillis = 120)) { it / 3 }
             ) {
                 Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(22.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .border(1.dp, DividerColor, RoundedCornerShape(24.dp)),
+                    shape = RoundedCornerShape(24.dp),
                     colors = CardDefaults.cardColors(containerColor = SurfaceElevated),
                     elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                 ) {
@@ -212,8 +247,14 @@ fun AlumbradoScreen(viewModel: AlumbradoViewModel = viewModel()) {
                 ) {
                     // Tarjeta Estado con Switch
                     Card(
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(22.dp),
+                        modifier = Modifier
+                            .weight(1f)
+                            .border(
+                                width = 1.dp,
+                                color = if (state.estadoOn) AmberAccent.copy(alpha = 0.3f) else DividerColor,
+                                shape = RoundedCornerShape(24.dp)
+                            ),
+                        shape = RoundedCornerShape(24.dp),
                         colors = CardDefaults.cardColors(containerColor = SurfaceElevated),
                         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                     ) {
@@ -275,8 +316,15 @@ fun AlumbradoScreen(viewModel: AlumbradoViewModel = viewModel()) {
 
                     // Tarjeta Condición LDR
                     Card(
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(22.dp),
+                        modifier = Modifier
+                            .weight(1f)
+                            .border(
+                                width = 1.dp,
+                                color = if (state.condicionNoche) CityGridPrimary.copy(alpha = 0.3f)
+                                        else AmberAccent.copy(alpha = 0.3f),
+                                shape = RoundedCornerShape(24.dp)
+                            ),
+                        shape = RoundedCornerShape(24.dp),
                         colors = CardDefaults.cardColors(
                             containerColor = if (state.condicionNoche) CityGridPrimaryDark.copy(alpha = 0.08f)
                                              else AmberLight.copy(alpha = 0.3f)
@@ -331,8 +379,10 @@ fun AlumbradoScreen(viewModel: AlumbradoViewModel = viewModel()) {
                 enter = fadeIn(tween(400, delayMillis = 240)) + slideInVertically(tween(400, delayMillis = 240)) { it / 3 }
             ) {
                 Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(22.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .border(1.dp, DividerColor, RoundedCornerShape(24.dp)),
+                    shape = RoundedCornerShape(24.dp),
                     colors = CardDefaults.cardColors(containerColor = SurfaceElevated),
                     elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                 ) {
@@ -343,7 +393,11 @@ fun AlumbradoScreen(viewModel: AlumbradoViewModel = viewModel()) {
                             color = TextSecondary,
                             letterSpacing = 0.8.sp
                         )
-                        DetailRowAlumbrado(Icons.Default.Sensors, "Sensor LDR", "${state.ldrLux} Lux")
+                        DetailRowAlumbrado(
+                            Icons.Default.Sensors, 
+                            "Sensor LDR", 
+                            if (state.conectado) "${state.ldrLux} Lux" else "Desconectado"
+                        )
                         DetailRowAlumbrado(Icons.Default.Lightbulb, "Luminarias activas", "${state.luminariasActivas} luminarias")
                         DetailRowAlumbrado(Icons.Default.Settings, "Modo", state.modo)
                     }

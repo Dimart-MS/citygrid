@@ -4,6 +4,7 @@ import com.example.citygrid.data.SupabaseManager
 import com.example.citygrid.model.db.DbLecturaLuminaria
 import com.example.citygrid.model.db.DbLuminaria
 import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.postgrest.query.Order
 import io.github.jan.supabase.realtime.selectAsFlow
 import io.github.jan.supabase.annotations.SupabaseExperimental
 import kotlinx.coroutines.flow.Flow
@@ -44,6 +45,22 @@ object AlumbradoRepository {
         } catch (e: Exception) {
             android.util.Log.e("AlumbradoRepository", "Error al insertar lectura de alumbrado", e)
             Result.failure(e)
+        }
+    }
+
+    suspend fun obtenerUltimasLecturasLuminaria(idLuminaria: Int, limite: Int = 50): List<DbLecturaLuminaria> {
+        return try {
+            SupabaseManager.client
+                .from("lecturasluminaria")
+                .select {
+                    filter { eq("idluminaria", idLuminaria) }
+                    order("fechahora", Order.DESCENDING)
+                    limit(limite.toLong())
+                }
+                .decodeList<DbLecturaLuminaria>()
+        } catch (e: Exception) {
+            android.util.Log.e("AlumbradoRepository", "Error al obtener últimas lecturas de luminaria", e)
+            emptyList()
         }
     }
 

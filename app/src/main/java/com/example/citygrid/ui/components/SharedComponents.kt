@@ -1,16 +1,13 @@
 package com.example.citygrid.ui.components
 
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -19,9 +16,11 @@ import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
+import androidx.compose.ui.composed
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -49,6 +48,8 @@ import com.example.citygrid.ui.theme.CityGridPrimaryDark
 import com.example.citygrid.ui.theme.DividerColor
 import com.example.citygrid.ui.theme.TextPrimary
 import com.example.citygrid.ui.theme.TextSecondary
+import com.example.citygrid.ui.theme.StatusRed
+import com.example.citygrid.ui.theme.StatusBlue
 
 // ─── Iconos personalizados Canvas ─────────────────────────────────────────────
 @Composable
@@ -547,4 +548,140 @@ fun ElementoEventoLista(title: String, subtitle: String, dotColor: Color = CityG
             Text(text = subtitle, color = TextSecondary, fontSize = 11.sp)
         }
     }
+}
+
+// ─── Extensión bounceClick para respuesta táctil interactiva ───────────────────
+fun Modifier.bounceClick(scaleDown: Float = 0.96f) = composed {
+    var isPressed by remember { mutableStateOf(false) }
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) scaleDown else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMedium
+        ),
+        label = "bounceScale"
+    )
+
+    this
+        .scale(scale)
+        .pointerInput(Unit) {
+            awaitPointerEventScope {
+                while (true) {
+                    awaitFirstDown(requireUnconsumed = false)
+                    isPressed = true
+                    do {
+                        val event = awaitPointerEvent()
+                    } while (event.changes.any { it.pressed })
+                    isPressed = false
+                }
+            }
+        }
+}
+
+// ─── Tarjeta común para Advertencia de Conectividad (Offline State) ───────────
+@Composable
+fun TarjetaAdvertenciaConectividad(
+    segundosInactivo: Long,
+    modifier: Modifier = Modifier
+) {
+    val infiniteTransition = rememberInfiniteTransition(label = "pulseAlpha")
+    val alphaAnim by infiniteTransition.animateFloat(
+        initialValue = 0.4f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1000),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "pulseAlpha"
+    )
+
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .border(1.dp, StatusRed.copy(alpha = 0.3f), RoundedCornerShape(24.dp)),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = StatusRed.copy(alpha = 0.05f))
+    ) {
+        Row(
+            modifier = Modifier.padding(18.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .alpha(alphaAnim)
+                    .size(40.dp)
+                    .background(StatusRed.copy(alpha = 0.15f), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Warning,
+                    contentDescription = "Desconectado",
+                    tint = StatusRed,
+                    modifier = Modifier.size(22.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(14.dp))
+            Column {
+                Text(
+                    text = "Dispositivo Inactivo",
+                    color = StatusRed,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = if (segundosInactivo > 0)
+                        "No se han recibido lecturas del ESP32 hace $segundosInactivo segundos."
+                    else
+                        "No se han recibido lecturas recientes del ESP32.",
+                    color = TextSecondary,
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+        }
+    }
+}
+
+// ─── ShimmerPlaceholder para Efecto de Carga Esqueleto ───────────────────────
+@Composable
+fun ShimmerPlaceholder(
+    modifier: Modifier = Modifier,
+    width: androidx.compose.ui.unit.Dp = androidx.compose.ui.unit.Dp.Unspecified,
+    height: androidx.compose.ui.unit.Dp = 20.dp,
+    shape: androidx.compose.ui.graphics.Shape = RoundedCornerShape(8.dp)
+) {
+    val transition = rememberInfiniteTransition(label = "shimmer")
+    val translateAnim by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1000f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1200, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "shimmerTranslate"
+    )
+
+    val shimmerColors = listOf(
+        Color.LightGray.copy(alpha = 0.3f),
+        Color.LightGray.copy(alpha = 0.5f),
+        Color.LightGray.copy(alpha = 0.3f),
+    )
+
+    val brush = Brush.linearGradient(
+        colors = shimmerColors,
+        start = Offset(translateAnim - 200f, translateAnim - 200f),
+        end = Offset(translateAnim + 200f, translateAnim + 200f)
+    )
+
+    val sizeModifier = if (width == androidx.compose.ui.unit.Dp.Unspecified) {
+        Modifier.fillMaxWidth()
+    } else {
+        Modifier.width(width)
+    }
+
+    Box(
+        modifier = modifier
+            .then(sizeModifier)
+            .height(height)
+            .background(brush, shape)
+    )
 }

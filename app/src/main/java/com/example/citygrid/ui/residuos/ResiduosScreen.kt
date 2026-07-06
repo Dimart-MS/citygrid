@@ -40,6 +40,8 @@ import com.example.citygrid.model.TipoAlerta
 import com.example.citygrid.ui.components.BarraProgresoPersonalizada
 import com.example.citygrid.ui.components.ElementoEventoLista
 import com.example.citygrid.ui.components.IconoPersonalizado
+import com.example.citygrid.ui.components.TarjetaAdvertenciaConectividad
+import com.example.citygrid.ui.components.bounceClick
 import com.example.citygrid.ui.theme.*
 import kotlinx.coroutines.delay
 
@@ -111,7 +113,11 @@ fun ResiduosScreen(
                     visible = visible,
                     enter = fadeIn(tween(400, delayMillis = 80)) + slideInVertically(tween(400, delayMillis = 80)) { it / 3 }
                 ) {
-                    BannerEstadoResiduos(criticalCount = criticalCount)
+                    BannerEstadoResiduos(
+                        criticalCount = criticalCount,
+                        conectado = state.conectado,
+                        contenedores = state.contenedores
+                    )
                 }
 
                 // Alerta de Inactividad
@@ -120,39 +126,7 @@ fun ResiduosScreen(
                         visible = visible,
                         enter = fadeIn(tween(300, delayMillis = 120))
                     ) {
-                        Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .border(1.dp, StatusRed, RoundedCornerShape(20.dp)),
-                            shape = RoundedCornerShape(20.dp),
-                            colors = CardDefaults.cardColors(containerColor = StatusRed.copy(alpha = 0.06f))
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(16.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Warning,
-                                    contentDescription = "Alerta de Inactividad",
-                                    tint = StatusRed,
-                                    modifier = Modifier.size(24.dp)
-                                )
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Column {
-                                    Text(
-                                        text = "Dispositivo Inactivo",
-                                        color = StatusRed,
-                                        style = MaterialTheme.typography.titleSmall,
-                                        fontWeight = FontWeight.SemiBold
-                                    )
-                                    Text(
-                                        text = "No se han recibido lecturas del ESP32 hace $segundosInactivo segundos.",
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        style = MaterialTheme.typography.bodySmall
-                                    )
-                                }
-                            }
-                        }
+                        TarjetaAdvertenciaConectividad(segundosInactivo = segundosInactivo)
                     }
                 }
 
@@ -220,7 +194,16 @@ fun ResiduosScreen(
 }
 
 @Composable
-fun BannerEstadoResiduos(criticalCount: Int) {
+fun BannerEstadoResiduos(criticalCount: Int, conectado: Boolean, contenedores: List<ContenedorData>) {
+    val algunDesconectado = contenedores.any { !it.activo }
+
+    val (badgeText, badgeColor, statusText) = when {
+        !conectado -> Triple("⚠ DESCONECTADO", StatusRed, "Dispositivo central fuera de línea")
+        algunDesconectado -> Triple("⚠ SENSOR ERROR", AmberAccent, "Fallo de hardware detectado")
+        criticalCount > 0 -> Triple("⚠ $criticalCount CRÍTICO" + if (criticalCount > 1) "s" else "", AmberAccent, "Atención requerida — Contenedor crítico")
+        else -> Triple("✓ SISTEMA OK", StatusGreen, "Monitoreo activo — Todo en orden")
+    }
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -228,9 +211,9 @@ fun BannerEstadoResiduos(criticalCount: Int) {
                 Brush.linearGradient(
                     colors = listOf(CityGridPrimaryDark, Color(0xFF0A3D62), Color(0xFF0D5A8C))
                 ),
-                RoundedCornerShape(22.dp)
+                RoundedCornerShape(24.dp)
             )
-            .border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(22.dp))
+            .border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(24.dp))
             .padding(20.dp)
     ) {
         Column {
@@ -245,47 +228,27 @@ fun BannerEstadoResiduos(criticalCount: Int) {
                     color = Color.White.copy(alpha = 0.65f)
                 )
                 Spacer(modifier = Modifier.weight(1f))
-                if (criticalCount > 0) {
-                    Box(
-                        modifier = Modifier
-                            .background(AmberAccent.copy(alpha = 0.15f), RoundedCornerShape(14.dp))
-                            .border(1.dp, AmberAccent.copy(alpha = 0.5f), RoundedCornerShape(14.dp))
-                            .padding(horizontal = 12.dp, vertical = 5.dp)
-                    ) {
-                        Text(
-                            text = "⚠ $criticalCount crítico" + if (criticalCount > 1) "s" else "",
-                            color = AmberAccent,
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                } else {
-                    Box(
-                        modifier = Modifier
-                            .background(StatusGreen.copy(alpha = 0.12f), RoundedCornerShape(14.dp))
-                            .border(1.dp, StatusGreen.copy(alpha = 0.4f), RoundedCornerShape(14.dp))
-                            .padding(horizontal = 12.dp, vertical = 5.dp)
-                    ) {
-                        Text(
-                            text = "✓ Sistema OK",
-                            color = StatusGreen,
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
+                
+                Box(
+                    modifier = Modifier
+                        .background(badgeColor.copy(alpha = 0.15f), RoundedCornerShape(14.dp))
+                        .border(1.dp, badgeColor.copy(alpha = 0.4f), RoundedCornerShape(14.dp))
+                        .padding(horizontal = 12.dp, vertical = 5.dp)
+                ) {
+                    Text(
+                        text = badgeText,
+                        color = badgeColor,
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
             Spacer(modifier = Modifier.height(14.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
-                val statusColor = if (criticalCount > 0) AmberAccent else StatusGreen
-                val statusText = if (criticalCount > 0)
-                    "Atención requerida — Contenedor crítico"
-                else
-                    "Monitoreo activo — Todo en orden"
                 Box(
                     modifier = Modifier
                         .size(8.dp)
-                        .background(statusColor, CircleShape)
+                        .background(badgeColor, CircleShape)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
@@ -302,18 +265,27 @@ fun BannerEstadoResiduos(criticalCount: Int) {
 fun TarjetaMedidor(maxContenedor: ContenedorData?) {
     val porcentaje = maxContenedor?.porcentaje ?: 0
     val nombre = maxContenedor?.nombre ?: "Sin Datos"
+    val activo = maxContenedor?.activo ?: true
 
-    val status = when {
-        porcentaje > 85 -> "Lleno — Requiere vaciado"
-        porcentaje >= 50 -> "Medio — Nivel estable"
-        else -> "Vacío — Nivel óptimo"
+    val status = if (activo) {
+        when {
+            porcentaje > 85 -> "Lleno — Requiere vaciado"
+            porcentaje >= 50 -> "Medio — Nivel estable"
+            else -> "Vacío — Nivel óptimo"
+        }
+    } else {
+        "Sensor Desconectado"
     }
 
     val (_, _, progressColor) = obtenerColoresContenedor(
-        when {
-            porcentaje > 85 -> "Lleno"
-            porcentaje >= 50 -> "Medio"
-            else -> "Vacío"
+        if (activo) {
+            when {
+                porcentaje > 85 -> "Lleno"
+                porcentaje >= 50 -> "Medio"
+                else -> "Vacío"
+            }
+        } else {
+            "Desconectado"
         }
     )
 
@@ -324,8 +296,10 @@ fun TarjetaMedidor(maxContenedor: ContenedorData?) {
     )
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(22.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(1.dp, DividerColor, RoundedCornerShape(24.dp)),
+        shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = SurfaceElevated),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
@@ -446,10 +420,14 @@ fun DibujoMedidorSegmentado(porcentaje: Float, colorActivo: Color) {
 
 @Composable
 fun TarjetaContenedor(contenedor: ContenedorData) {
-    val status = when {
-        contenedor.porcentaje > 85 -> "Lleno"
-        contenedor.porcentaje >= 50 -> "Medio"
-        else -> "Vacío"
+    val status = if (contenedor.activo) {
+        when {
+            contenedor.porcentaje > 85 -> "Lleno"
+            contenedor.porcentaje >= 50 -> "Medio"
+            else -> "Vacío"
+        }
+    } else {
+        "Desconectado"
     }
 
     val icon = when (contenedor.tipo.lowercase()) {
@@ -468,8 +446,10 @@ fun TarjetaContenedor(contenedor: ContenedorData) {
     }
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(1.dp, DividerColor, RoundedCornerShape(24.dp)),
+        shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = SurfaceElevated),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
@@ -481,7 +461,7 @@ fun TarjetaContenedor(contenedor: ContenedorData) {
                     Brush.horizontalGradient(
                         colors = listOf(progressColor.copy(alpha = 0.12f), Color.Transparent)
                     ),
-                    RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
+                    RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
                 )
                 .padding(horizontal = 16.dp, vertical = 14.dp)
         ) {
@@ -550,9 +530,10 @@ fun TarjetaContenedor(contenedor: ContenedorData) {
 
 private fun obtenerColoresContenedor(status: String): Triple<Color, Color, Color> {
     return when (status) {
-        "Lleno" -> Triple(StatusRed,    StatusRed.copy(alpha = 0.12f),    StatusRed)
-        "Medio" -> Triple(StatusYellow, StatusYellow.copy(alpha = 0.15f), StatusYellow)
-        else    -> Triple(StatusGreen,  StatusGreen.copy(alpha = 0.12f),  StatusGreen)
+        "Lleno"        -> Triple(StatusRed,    StatusRed.copy(alpha = 0.12f),    StatusRed)
+        "Medio"        -> Triple(StatusYellow, StatusYellow.copy(alpha = 0.15f), StatusYellow)
+        "Desconectado" -> Triple(Color.Gray,   Color.Gray.copy(alpha = 0.12f),   Color.Gray)
+        else           -> Triple(StatusGreen,  StatusGreen.copy(alpha = 0.12f),  StatusGreen)
     }
 }
 
@@ -562,8 +543,10 @@ fun TarjetaEventosRecientesResiduos(
     onVerAlertas: () -> Unit
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(1.dp, DividerColor, RoundedCornerShape(24.dp)),
+        shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = SurfaceElevated),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {

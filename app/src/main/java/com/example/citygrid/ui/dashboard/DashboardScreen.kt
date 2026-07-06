@@ -38,6 +38,7 @@ import com.example.citygrid.navigation.Screen
 import com.example.citygrid.ui.components.AlertItemCard
 import com.example.citygrid.ui.components.SemiCircleChart
 import com.example.citygrid.ui.components.StatusBadge
+import com.example.citygrid.ui.components.bounceClick
 import com.example.citygrid.ui.theme.*
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -141,7 +142,7 @@ fun DashboardScreen(
                             .padding(horizontal = 20.dp)
                             .shadow(
                                 elevation = 12.dp,
-                                shape = RoundedCornerShape(22.dp),
+                                shape = RoundedCornerShape(24.dp),
                                 ambientColor = CityGridPrimaryDark.copy(alpha = 0.3f),
                                 spotColor = CityGridPrimaryDark.copy(alpha = 0.4f)
                             )
@@ -149,9 +150,9 @@ fun DashboardScreen(
                                 Brush.linearGradient(
                                     colors = listOf(CityGridPrimaryDark, Color(0xFF0A3D62), Color(0xFF0D5A8C))
                                 ),
-                                RoundedCornerShape(22.dp)
+                                RoundedCornerShape(24.dp)
                             )
-                            .border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(22.dp))
+                            .border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(24.dp))
                             .padding(20.dp)
                     ) {
                         Column {
@@ -259,8 +260,9 @@ fun DashboardScreen(
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 20.dp),
-                        shape = RoundedCornerShape(22.dp),
+                            .padding(horizontal = 20.dp)
+                            .border(1.dp, DividerColor, RoundedCornerShape(24.dp)),
+                        shape = RoundedCornerShape(24.dp),
                         colors = CardDefaults.cardColors(containerColor = SurfaceElevated),
                         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                     ) {
@@ -325,8 +327,10 @@ fun DashboardScreen(
                         ) {
                             // Tarjeta Agua
                             Card(
-                                modifier = Modifier.weight(1f),
-                                shape = RoundedCornerShape(20.dp),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .border(1.dp, DividerColor, RoundedCornerShape(24.dp)),
+                                shape = RoundedCornerShape(24.dp),
                                 colors = CardDefaults.cardColors(containerColor = SurfaceElevated),
                                 elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                             ) {
@@ -387,8 +391,10 @@ fun DashboardScreen(
                             }
                             // Tarjeta Alumbrado
                             Card(
-                                modifier = Modifier.weight(1f),
-                                shape = RoundedCornerShape(20.dp),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .border(1.dp, DividerColor, RoundedCornerShape(24.dp)),
+                                shape = RoundedCornerShape(24.dp),
                                 colors = CardDefaults.cardColors(containerColor = SurfaceElevated),
                                 elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                             ) {
@@ -461,8 +467,9 @@ fun DashboardScreen(
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 20.dp),
-                        shape = RoundedCornerShape(22.dp),
+                            .padding(horizontal = 20.dp)
+                            .border(1.dp, DividerColor, RoundedCornerShape(24.dp)),
+                        shape = RoundedCornerShape(24.dp),
                         colors = CardDefaults.cardColors(containerColor = SurfaceElevated),
                         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                     ) {
@@ -585,18 +592,21 @@ private fun AccesoRapidoItem(
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.clickable(onClick = onClick)
+        modifier = Modifier
+            .bounceClick()
+            .clickable(onClick = onClick)
     ) {
         Box(
             modifier = Modifier
                 .size(64.dp)
                 .shadow(
                     elevation = 4.dp,
-                    shape = RoundedCornerShape(20.dp),
+                    shape = RoundedCornerShape(24.dp),
                     ambientColor = iconColor.copy(alpha = 0.2f),
                     spotColor = iconColor.copy(alpha = 0.2f)
                 )
-                .background(backgroundColor, RoundedCornerShape(20.dp)),
+                .background(backgroundColor, RoundedCornerShape(24.dp))
+                .border(1.dp, DividerColor, RoundedCornerShape(24.dp)),
             contentAlignment = Alignment.Center
         ) {
             Icon(

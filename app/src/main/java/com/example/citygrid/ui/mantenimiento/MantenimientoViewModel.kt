@@ -9,6 +9,7 @@ import com.example.citygrid.model.db.DbComponente
 import com.example.citygrid.model.db.DbMantenimiento
 import com.example.citygrid.model.db.DbMantenimientoInsert
 import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.postgrest.query.Order
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -82,10 +83,13 @@ class MantenimientoViewModel(private val sessionManager: SessionManager) : ViewM
             try {
                 val lista = SupabaseManager.client
                     .from("mantenimientos")
-                    .select()
+                    .select {
+                        order("fechamantenimiento", Order.DESCENDING)
+                        limit(100)
+                    }
                     .decodeList<DbMantenimiento>()
 
-                _mantenimientos.value = lista.sortedByDescending { it.fechaMantenimiento }
+                _mantenimientos.value = lista
             } catch (e: Exception) {
                 e.printStackTrace()
             } finally {

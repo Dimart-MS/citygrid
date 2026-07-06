@@ -37,8 +37,10 @@ fun StatusBadge(
         .replace("Í", "I").replace("Ó", "O").replace("É", "E")
 
     val (bgColor, textColor) = when (normalized) {
-        "LLENO", "CRITICO", "DESCONECTADO", "INACTIVO" ->
+        "LLENO", "CRITICO" ->
             StatusRed.copy(alpha = 0.12f) to StatusRed
+        "DESCONECTADO", "INACTIVO" ->
+            Color.Gray.copy(alpha = 0.12f) to Color.Gray
         "MEDIO", "ADVERTENCIA" ->
             AmberLight to AmberDark
         "VACIO", "NORMAL", "OPERANDO", "ACTIVO" ->

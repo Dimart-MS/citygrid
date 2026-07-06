@@ -5,6 +5,7 @@ import com.example.citygrid.model.db.DbBomba
 import com.example.citygrid.model.db.DbLecturaAgua
 import com.example.citygrid.model.db.DbTanque
 import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.postgrest.query.Order
 import io.github.jan.supabase.realtime.selectAsFlow
 import io.github.jan.supabase.annotations.SupabaseExperimental
 import kotlinx.coroutines.flow.Flow
@@ -69,6 +70,22 @@ object AguaRepository {
         } catch (e: Exception) {
             android.util.Log.e("AguaRepository", "Error al insertar lectura de agua", e)
             Result.failure(e)
+        }
+    }
+
+    suspend fun obtenerUltimasLecturasAgua(idTanque: Int, limite: Int = 50): List<DbLecturaAgua> {
+        return try {
+            SupabaseManager.client
+                .from("lecturasagua")
+                .select {
+                    filter { eq("idtanque", idTanque) }
+                    order("fechahora", Order.DESCENDING)
+                    limit(limite.toLong())
+                }
+                .decodeList<DbLecturaAgua>()
+        } catch (e: Exception) {
+            android.util.Log.e("AguaRepository", "Error al obtener últimas lecturas de agua", e)
+            emptyList()
         }
     }
 

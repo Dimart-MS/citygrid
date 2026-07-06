@@ -25,8 +25,12 @@ class AlumbradoViewModel : ViewModel() {
 
     fun cargarHistorial(idLuminaria: Int = 1) {
         viewModelScope.launch {
-            val lecturas = AlumbradoRepository.obtenerLecturasPorLuminaria(idLuminaria)
-            _historial.value = lecturas.sortedByDescending { it.fechaHora }
+            try {
+                val lecturas = AlumbradoRepository.obtenerUltimasLecturasLuminaria(idLuminaria, 50)
+                _historial.value = lecturas
+            } catch (e: Exception) {
+                android.util.Log.e("AlumbradoViewModel", "Error al cargar historial", e)
+            }
         }
     }
 

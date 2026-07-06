@@ -28,6 +28,7 @@ BEGIN
         FROM pg_tables 
         WHERE schemaname = 'public' 
     LOOP
+        -- Permitir lectura pública a todas las tablas
         EXECUTE format('
             CREATE POLICY "Allow anon read access on %I"
             ON %I FOR SELECT 
@@ -35,6 +36,7 @@ BEGIN
             USING (true);
         ', t, t);
         
+        -- Permitir inserción pública para registros de telemetría, bitácoras y registros
         EXECUTE format('
             CREATE POLICY "Allow anon insert access on %I"
             ON %I FOR INSERT 
@@ -42,19 +44,19 @@ BEGIN
             WITH CHECK (true);
         ', t, t);
         
-        EXECUTE format('
-            CREATE POLICY "Allow anon update access on %I"
-            ON %I FOR UPDATE 
-            TO anon
-            USING (true)
-            WITH CHECK (true);
-        ', t, t);
+        -- Permitir actualización pública ÚNICAMENTE en 'alertas' (para marcarlas como atendidas)
+        -- y en 'usuarios' (para migrar/hashear contraseñas en seedAdmin)
+        IF t IN ('alertas', 'usuarios') THEN
+            EXECUTE format('
+                CREATE POLICY "Allow anon update access on %I"
+                ON %I FOR UPDATE 
+                TO anon
+                USING (true)
+                WITH CHECK (true);
+            ', t, t);
+        END IF;
         
-        EXECUTE format('
-            CREATE POLICY "Allow anon delete access on %I"
-            ON %I FOR DELETE 
-            TO anon
-            USING (true);
-        ', t, t);
+        -- NO se crea ninguna política de DELETE para anon.
+        -- Eliminar registros está completamente deshabilitado para el rol público 'anon'.
     END LOOP;
 END $$;
