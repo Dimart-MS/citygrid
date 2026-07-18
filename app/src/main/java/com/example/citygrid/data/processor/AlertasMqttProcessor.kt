@@ -5,6 +5,7 @@ import com.example.citygrid.data.MqttManager
 import com.example.citygrid.data.AlertaPayload
 import com.example.citygrid.model.Alerta
 import com.example.citygrid.model.TipoAlerta
+import com.example.citygrid.utils.Logger
 import com.example.citygrid.utils.NotificationHelper
 import kotlinx.serialization.json.Json
 import java.util.UUID
@@ -19,9 +20,9 @@ object AlertasMqttProcessor {
             val tipoAlerta = try { TipoAlerta.valueOf(tipoStr.uppercase()) } catch (e: Exception) { TipoAlerta.INFORMACION }
             val titulo = data.titulo ?: "Nueva Alerta de CityGrid"
             val desc = data.descripcion ?: "Se ha recibido un aviso del sistema."
-            
+
             NotificationHelper.enviarNotificacion(context, tipoAlerta, titulo, desc)
-            
+
             // Agregar al listado local de alertas MQTT
             val nuevaAlerta = Alerta(
                 id = UUID.randomUUID().toString(),
@@ -40,9 +41,9 @@ object AlertasMqttProcessor {
             MqttManager.addMqttAlerta(nuevaAlerta)
         } catch (e: Exception) {
             // Si no es un JSON, procesar como texto plano (tipo advertencia)
-            android.util.Log.d("AlertasMqttProcessor", "Procesando payload de alerta como texto plano: $payload")
+            Logger.d("AlertasMqttProcessor", "Procesando payload de alerta como texto plano: $payload")
             NotificationHelper.enviarNotificacion(context, TipoAlerta.ADVERTENCIA, "Alerta del Sistema", payload)
-            
+
             val nuevaAlerta = Alerta(
                 id = UUID.randomUUID().toString(),
                 tipo = TipoAlerta.ADVERTENCIA,

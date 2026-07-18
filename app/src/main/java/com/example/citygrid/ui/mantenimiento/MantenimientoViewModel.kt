@@ -6,6 +6,7 @@ import com.example.citygrid.data.SessionManager
 import com.example.citygrid.data.SupabaseManager
 import com.example.citygrid.data.repository.BitacoraRepository
 import com.example.citygrid.model.db.DbComponente
+import com.example.citygrid.utils.Logger
 import com.example.citygrid.model.db.DbMantenimiento
 import com.example.citygrid.model.db.DbMantenimientoInsert
 import io.github.jan.supabase.postgrest.from
@@ -72,7 +73,7 @@ class MantenimientoViewModel(private val sessionManager: SessionManager) : ViewM
                     .decodeList<DbComponente>()
                 _componentes.value = lista
             } catch (e: Exception) {
-                android.util.Log.e("MantenimientoViewModel", "Error al cargar componentes", e)
+                Logger.e("MantenimientoViewModel", "Error al cargar componentes", e)
             }
         }
     }

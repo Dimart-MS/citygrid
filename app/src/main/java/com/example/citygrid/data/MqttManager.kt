@@ -14,7 +14,9 @@ import com.example.citygrid.data.processor.ResiduosMqttProcessor
 import com.example.citygrid.data.processor.AguaMqttProcessor
 import com.example.citygrid.data.processor.AlumbradoMqttProcessor
 import com.example.citygrid.data.processor.AlertasMqttProcessor
+import com.example.citygrid.utils.AlertaHelper
 import com.example.citygrid.utils.Constants
+import com.example.citygrid.utils.Logger
 import com.example.citygrid.utils.NotificationHelper
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -93,6 +95,7 @@ object MqttManager {
     // Variables de monitoreo de inactividad / fuera de línea y Supabase Realtime
     private var monitorJob: kotlinx.coroutines.Job? = null
     private var ultimoMensajeBasuraTimestamp = System.currentTimeMillis()
+    @Volatile
     private var esSistemaOnline = true
     private val json = Json { ignoreUnknownKeys = true }
     private var retryJob: kotlinx.coroutines.Job? = null
@@ -113,9 +116,8 @@ object MqttManager {
     }
 
     private var client: MqttAsyncClient? = null
-    
-    // Evita duplicar alertas consecutivas para el mismo contenedor
-    private val alertasReportadas = mutableMapOf<String, Boolean>()
+
+    // alertasReportadas movido a AlertaHelper centralizado
 
     fun connect(context: Context) {
         // Cargar últimos registros históricos de Supabase solo una vez al inicio
@@ -139,7 +141,7 @@ object MqttManager {
 
                 client?.setCallback(object : MqttCallbackExtended {
                     override fun connectComplete(reconnect: Boolean, serverURI: String?) {
-                        android.util.Log.d("MqttManager", "Conectado exitosamente a $serverURI. Reconnect: $reconnect")
+                        Logger.d("MqttManager", "Conectado exitosamente a $serverURI. Reconnect: $reconnect")
                         synchronized(this@MqttManager) {
                             isConnecting = false
                             retryJob?.cancel()
@@ -154,13 +156,13 @@ object MqttManager {
                             try {
                                 SupabaseManager.client.realtime.connect()
                             } catch (e: Exception) {
-                                android.util.Log.e("MqttManager", "Error al conectar Realtime de Supabase", e)
+                                Logger.e("MqttManager", "Error al conectar Realtime de Supabase", e)
                             }
                         }
                     }
 
                     override fun connectionLost(cause: Throwable?) {
-                        android.util.Log.e("MqttManager", "Conexión perdida con el broker", cause)
+                        Logger.e("MqttManager", "Conexión perdida con el broker", cause)
                         synchronized(this@MqttManager) {
                             isConnecting = false
                         }
@@ -171,8 +173,8 @@ object MqttManager {
 
                     override fun messageArrived(topic: String, message: MqttMessage) {
                         val payload = String(message.payload)
-                        android.util.Log.d("MqttManager", "Mensaje recibido en $topic: $payload")
-                        
+                        Logger.d("MqttManager", "Mensaje recibido en $topic: $payload")
+
                         // Si llega cualquier mensaje de telemetría del ESP32, registrar actividad
                         if (topic == Constants.TOPIC_RESIDUOS ||
                             topic == Constants.TOPIC_AGUA ||
@@ -188,7 +190,7 @@ object MqttManager {
                 })
             }
         } catch (e: Exception) {
-            android.util.Log.e("MqttManager", "Error al inicializar MqttAsyncClient", e)
+            Logger.e("MqttManager", "Error al inicializar MqttAsyncClient", e)
             synchronized(this) {
                 isConnecting = false
             }
@@ -199,11 +201,11 @@ object MqttManager {
         try {
             client?.connect(mqttOptions, null, object : IMqttActionListener {
                 override fun onSuccess(asyncActionToken: IMqttToken?) {
-                    android.util.Log.d("MqttManager", "Llamada connect() exitosa")
+                    Logger.d("MqttManager", "Llamada connect() exitosa")
                 }
 
                 override fun onFailure(asyncActionToken: IMqttToken?, exception: Throwable?) {
-                    android.util.Log.e("MqttManager", "Llamada connect() fallida", exception)
+                    Logger.e("MqttManager", "Llamada connect() fallida", exception)
                     synchronized(this@MqttManager) {
                         isConnecting = false
                     }
@@ -211,7 +213,7 @@ object MqttManager {
                 }
             })
         } catch (e: Exception) {
-            android.util.Log.e("MqttManager", "Error al intentar iniciar la conexión", e)
+            Logger.e("MqttManager", "Error al intentar iniciar la conexión", e)
             synchronized(this) {
                 isConnecting = false
             }
@@ -223,10 +225,10 @@ object MqttManager {
         synchronized(this) {
             if (retryJob?.isActive == true) return
             retryJob = scope.launch {
-                android.util.Log.d("MqttManager", "Programando reintento de conexión MQTT en 5 segundos...")
+                Logger.d("MqttManager", "Programando reintento de conexión MQTT en 5 segundos...")
                 kotlinx.coroutines.delay(5000)
                 if (client == null || !client!!.isConnected) {
-                    android.util.Log.d("MqttManager", "Reintentando conectar MQTT...")
+                    Logger.d("MqttManager", "Reintentando conectar MQTT...")
                     connect(context)
                 }
             }
@@ -241,24 +243,24 @@ object MqttManager {
             _aguaFlow.value = _aguaFlow.value.copy(conectado = false)
             _alumbradoFlow.value = _alumbradoFlow.value.copy(conectado = false)
         } catch (e: Exception) {
-            android.util.Log.e("MqttManager", "Error al desconectar", e)
+            Logger.e("MqttManager", "Error al desconectar", e)
         }
     }
 
     fun publish(topic: String, payload: String) {
         if (client == null || !client!!.isConnected) {
-            android.util.Log.w("MqttManager", "No se puede publicar, cliente desconectado")
+            Logger.w("MqttManager", "No se puede publicar, cliente desconectado")
             return
         }
         try {
-            android.util.Log.d("MqttManager", "Enviando a $topic -> $payload")
+            Logger.d("MqttManager", "Enviando a $topic -> $payload")
             val message = MqttMessage(payload.toByteArray()).apply {
                 qos = 1
                 isRetained = false
             }
             client?.publish(topic, message)
         } catch (e: Exception) {
-            android.util.Log.e("MqttManager", "Error al publicar mensaje", e)
+            Logger.e("MqttManager", "Error al publicar mensaje", e)
         }
     }
 
@@ -275,15 +277,15 @@ object MqttManager {
         try {
             client?.subscribe(topics, qos, null, object : IMqttActionListener {
                 override fun onSuccess(asyncActionToken: IMqttToken?) {
-                    android.util.Log.d("MqttManager", "Suscrito exitosamente a los temas")
+                    Logger.d("MqttManager", "Suscrito exitosamente a los temas")
                 }
 
                 override fun onFailure(asyncActionToken: IMqttToken?, exception: Throwable?) {
-                    android.util.Log.e("MqttManager", "Fallo al suscribirse a los temas", exception)
+                    Logger.e("MqttManager", "Fallo al suscribirse a los temas", exception)
                 }
             })
         } catch (e: Exception) {
-            android.util.Log.e("MqttManager", "Error al suscribirse", e)
+            Logger.e("MqttManager", "Error al suscribirse", e)
         }
     }
 
@@ -322,7 +324,7 @@ object MqttManager {
                     }
                 }
             } catch (e: Exception) {
-                android.util.Log.e("MqttManager", "Error en parseMessage de topic $topic", e)
+                Logger.e("MqttManager", "Error en parseMessage de topic $topic", e)
             }
         }
     }
@@ -394,63 +396,14 @@ object MqttManager {
         }
     }
 
-    private fun procesarAlertaMqtt(payload: String, context: Context) {
-        try {
-            // Intenta procesar como JSON estructurado
-            val data = json.decodeFromString<AlertaPayload>(payload)
-            val tipoStr = data.tipo ?: "INFORMACION"
-            val tipoAlerta = try { TipoAlerta.valueOf(tipoStr.uppercase()) } catch (e: Exception) { TipoAlerta.INFORMACION }
-            val titulo = data.titulo ?: "Nueva Alerta de CityGrid"
-            val desc = data.descripcion ?: "Se ha recibido un aviso del sistema."
-            
-            NotificationHelper.enviarNotificacion(context, tipoAlerta, titulo, desc)
-            
-            // Agregar al listado local de alertas MQTT
-            val nuevaAlerta = Alerta(
-                id = UUID.randomUUID().toString(),
-                tipo = tipoAlerta,
-                titulo = titulo,
-                descripcion = desc,
-                sistema = when (data.idSistema) {
-                    1 -> "Residuos"
-                    2 -> "Agua"
-                    3 -> "Alumbrado"
-                    else -> "Sistema"
-                },
-                timestamp = System.currentTimeMillis(),
-                atendida = false
-            )
-            val listaActual = _alertasFlow.value.toMutableList()
-            listaActual.add(0, nuevaAlerta)
-            _alertasFlow.value = listaActual.take(20) // Conservar las últimas 20 alertas MQTT
-        } catch (e: Exception) {
-            // Si no es un JSON, procesar como texto plano (tipo advertencia)
-            android.util.Log.d("MqttManager", "Procesando payload de alerta como texto plano: $payload")
-            NotificationHelper.enviarNotificacion(context, TipoAlerta.ADVERTENCIA, "Alerta del Sistema", payload)
-            
-            val nuevaAlerta = Alerta(
-                id = UUID.randomUUID().toString(),
-                tipo = TipoAlerta.ADVERTENCIA,
-                titulo = "Alerta de Dispositivo",
-                descripcion = payload,
-                sistema = "Sistema",
-                timestamp = System.currentTimeMillis(),
-                atendida = false
-            )
-            val listaActual = _alertasFlow.value.toMutableList()
-            listaActual.add(0, nuevaAlerta)
-            _alertasFlow.value = listaActual.take(20)
-        }
-    }
-
     private fun procesarStatus(payload: String, context: Context) {
         try {
             val status = json.decodeFromString<com.example.citygrid.model.StatusState>(payload)
             _statusFlow.value = status
 
             if (status.estado.equals("OFFLINE", ignoreCase = true)) {
-                android.util.Log.w("MqttManager", "Dispositivo ESP32 reportó desconexión abrupta (LWT)")
-                
+                Logger.w("MqttManager", "Dispositivo ESP32 reportó desconexión abrupta (LWT)")
+
                 // Actualizar flujos para mostrar desconexión en la interfaz
                 val resState = _residuosFlow.value
                 val contenedoresActualizados = resState.contenedores.map { it.copy(activo = false) }
@@ -509,40 +462,32 @@ object MqttManager {
                 _alumbradoFlow.value = _alumbradoFlow.value.copy(conectado = ldrActivo)
             }
         } catch (e: Exception) {
-            android.util.Log.e("MqttManager", "Error al procesar mensaje de Status: $payload", e)
+            Logger.e("MqttManager", "Error al procesar mensaje de Status: $payload", e)
         }
     }
 
     private fun verificarSaludSensor(estado: String, nombreSensor: String, idSistema: Int, context: Context) {
         val claveAlerta = "sensor_fallo_${nombreSensor.replace(" ", "_")}"
         if (estado.equals("ERROR_DESCONECTADO", ignoreCase = true)) {
-            if (alertasReportadas[claveAlerta] != true) {
-                alertasReportadas[claveAlerta] = true
-
-                // 1. Mostrar notificación push crítica
-                NotificationHelper.enviarNotificacion(
-                    context = context,
+            scope.launch {
+                AlertaHelper.emitirSiNueva(
+                    clave = claveAlerta,
                     tipo = TipoAlerta.CRITICO,
                     titulo = "Fallo de Hardware: $nombreSensor",
-                    mensaje = "El sensor físico de $nombreSensor está desconectado o averiado. Requiere mantenimiento."
-                )
-
-                // 2. Registrar en base de datos
-                scope.launch {
-                    val dbAlerta = DbAlerta(
+                    mensaje = "El sensor físico de $nombreSensor está desconectado o averiado. Requiere mantenimiento.",
+                    dbAlerta = DbAlerta(
                         idSistema = idSistema,
-                        idTipoAlerta = 1, // CRÍTICO
-                        idEstadoAlerta = 1, // PENDIENTE
+                        idTipoAlerta = 1,
+                        idEstadoAlerta = 1,
                         descripcion = "Fallo de Hardware detectado en: $nombreSensor (Sensor desconectado/averiado)",
                         fechaHora = java.time.OffsetDateTime.now().toString()
-                    )
-                    AlertaRepository.insertarAlerta(dbAlerta)
-                }
+                    ),
+                    context = context
+                )
             }
         } else {
-            // Si volvió a estar OK y antes estaba en fallo, reportar recuperación
-            if (alertasReportadas[claveAlerta] == true) {
-                alertasReportadas[claveAlerta] = false
+            if (AlertaHelper.estaReportada(claveAlerta)) {
+                AlertaHelper.liberar(claveAlerta)
                 NotificationHelper.enviarNotificacion(
                     context = context,
                     tipo = TipoAlerta.NORMAL,
@@ -550,17 +495,30 @@ object MqttManager {
                     mensaje = "El sensor físico de $nombreSensor ha vuelto a operar correctamente."
                 )
                 scope.launch {
-                    val dbAlerta = DbAlerta(
-                        idSistema = idSistema,
-                        idTipoAlerta = 4, // NORMAL
-                        idEstadoAlerta = 2, // ATENDIDA
-                        descripcion = "Sensor $nombreSensor recuperado con éxito",
-                        fechaHora = java.time.OffsetDateTime.now().toString()
+                    AlertaRepository.insertarAlerta(
+                        DbAlerta(
+                            idSistema = idSistema,
+                            idTipoAlerta = 4,
+                            idEstadoAlerta = 2,
+                            descripcion = "Sensor $nombreSensor recuperado con éxito",
+                            fechaHora = java.time.OffsetDateTime.now().toString()
+                        )
                     )
-                    AlertaRepository.insertarAlerta(dbAlerta)
                 }
             }
         }
+    }
+
+    /** Libera recursos del MqttManager. Llamar desde onDestroy de la Activity. */
+    fun shutdown() {
+        monitorJob?.cancel()
+        retryJob?.cancel()
+        try {
+            client?.disconnect()
+        } catch (_: Exception) {}
+        client?.close()
+        client = null
+        AlertaHelper.limpiarTodas()
     }
 }
 

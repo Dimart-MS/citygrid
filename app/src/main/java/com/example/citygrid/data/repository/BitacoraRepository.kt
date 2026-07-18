@@ -1,6 +1,6 @@
 package com.example.citygrid.data.repository
 
-import android.util.Log
+import com.example.citygrid.utils.Logger
 import com.example.citygrid.data.SupabaseManager
 import com.example.citygrid.model.db.DbBitacoraSistema
 import io.github.jan.supabase.postgrest.from
@@ -41,9 +41,9 @@ object BitacoraRepository {
             SupabaseManager.client
                 .from("bitacorasistema")
                 .insert(registro)
-            Log.d(TAG, "Bitácora registrada: [$accion] usuario=$idUsuario")
+            Logger.d(TAG, "Bitácora registrada: [$accion] usuario=$idUsuario")
         } catch (e: Exception) {
-            Log.e(TAG, "Error al registrar en bitácora: $accion", e)
+            Logger.e(TAG, "Error al registrar en bitácora: $accion", e)
         }
     }
 
@@ -58,7 +58,7 @@ object BitacoraRepository {
                 }
                 .decodeList<DbBitacoraSistema>()
         } catch (e: Exception) {
-            Log.e(TAG, "Error al cargar bitácora", e)
+            Logger.e(TAG, "Error al cargar bitácora", e)
             emptyList()
         }
     }

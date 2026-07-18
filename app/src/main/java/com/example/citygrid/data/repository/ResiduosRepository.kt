@@ -3,6 +3,7 @@ package com.example.citygrid.data.repository
 import com.example.citygrid.data.SupabaseManager
 import com.example.citygrid.model.db.DbContenedor
 import com.example.citygrid.model.db.DbLecturaResiduo
+import com.example.citygrid.utils.Logger
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Order
 import io.github.jan.supabase.realtime.selectAsFlow
@@ -15,7 +16,7 @@ object ResiduosRepository {
         return try {
             SupabaseManager.client.from("contenedores").select().decodeList<DbContenedor>()
         } catch (e: Exception) {
-            android.util.Log.e("ResiduosRepository", "Error al obtener contenedores", e)
+            Logger.e("ResiduosRepository", "Error al obtener contenedores", e)
             emptyList()
         }
     }
@@ -29,7 +30,7 @@ object ResiduosRepository {
                 }
                 .decodeList<DbLecturaResiduo>()
         } catch (e: Exception) {
-            android.util.Log.e("ResiduosRepository", "Error al obtener lecturas", e)
+            Logger.e("ResiduosRepository", "Error al obtener lecturas", e)
             emptyList()
         }
     }
@@ -45,7 +46,7 @@ object ResiduosRepository {
             SupabaseManager.client.from("lecturasresiduos").insert(lectura)
             Result.success(Unit)
         } catch (e: Exception) {
-            android.util.Log.e("ResiduosRepository", "Error al insertar lectura de residuo", e)
+            Logger.e("ResiduosRepository", "Error al insertar lectura de residuo", e)
             Result.failure(e)
         }
     }
@@ -61,7 +62,7 @@ object ResiduosRepository {
                 }
                 .decodeSingleOrNull<DbLecturaResiduo>()
         } catch (e: Exception) {
-            android.util.Log.e("ResiduosRepository", "Error al obtener última lectura de residuo", e)
+            Logger.e("ResiduosRepository", "Error al obtener última lectura de residuo", e)
             null
         }
     }

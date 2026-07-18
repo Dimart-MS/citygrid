@@ -50,25 +50,20 @@ import com.example.citygrid.ui.theme.SurfaceCard
 import com.example.citygrid.ui.theme.SurfaceElevated
 import com.example.citygrid.ui.theme.DividerColor
 import com.example.citygrid.ui.theme.TextSecondary
+import com.example.citygrid.utils.formatTimestamp
+import com.example.citygrid.utils.rememberElapsedSeconds
+import com.example.citygrid.utils.Constants
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AguaScreen(viewModel: AguaViewModel = viewModel()) {
     val state by viewModel.aguaState.collectAsState()
     val historial by viewModel.historial.collectAsState()
+    val enviandoComando by viewModel.enviandoComando.collectAsState()
     var mostrarHistorial by remember { mutableStateOf(false) }
 
-    var currentTime by remember { mutableStateOf(System.currentTimeMillis()) }
-    LaunchedEffect(state.conectado, state.ultimaActualizacion) {
-        if (!state.conectado) {
-            while (true) {
-                currentTime = System.currentTimeMillis()
-                delay(1000)
-            }
-        }
-    }
-
-    val segundosInactivo = ((currentTime - state.ultimaActualizacion) / 1000).coerceAtLeast(0)
+    // Usar utilidad reactiva para calcular segundos inactivo (sin bucle while)
+    val segundosInactivo = rememberElapsedSeconds(state.ultimaActualizacion)
 
     var visible by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { visible = true }
@@ -363,14 +358,19 @@ fun AguaScreen(viewModel: AguaViewModel = viewModel()) {
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
                                 Text(
-                                    text = if (state.bombaActiva) "Activa — modo manual (60s)" else "Apagada",
+                                    text = if (enviandoComando) "Enviando comando..."
+                                           else if (state.bombaActiva) "Activa — modo manual (60s)"
+                                           else "Apagada",
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = if (state.bombaActiva) StatusGreen else TextSecondary
+                                    color = if (enviandoComando) AmberAccent
+                                           else if (state.bombaActiva) StatusGreen
+                                           else TextSecondary
                                 )
                             }
                             Switch(
                                 checked = state.bombaActiva,
-                                onCheckedChange = { viewModel.activarBombaManual(it) },
+                                onCheckedChange = { if (!enviandoComando) viewModel.activarBombaManual(it) },
+                                enabled = !enviandoComando,
                                 colors = SwitchDefaults.colors(
                                     checkedThumbColor = Color.White,
                                     checkedTrackColor = CityGridPrimary,

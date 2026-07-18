@@ -16,6 +16,7 @@ import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -189,7 +190,9 @@ fun IconoPersonalizado(name: String, tint: Color, modifier: Modifier = Modifier)
 @Composable
 fun BloqueEncabezado(
     alertasPendientes: Int = 0,
-    onLogoutClick: () -> Unit = {}
+    onLogoutClick: () -> Unit = {},
+    onBellClick: () -> Unit = {},
+    onConfigClick: () -> Unit = {}
 ) {
     Box(
         modifier = Modifier
@@ -280,7 +283,8 @@ fun BloqueEncabezado(
                     modifier = Modifier
                         .size(42.dp)
                         .background(Color.White.copy(alpha = 0.1f), CircleShape)
-                        .border(1.dp, Color.White.copy(alpha = 0.15f), CircleShape),
+                        .border(1.dp, Color.White.copy(alpha = 0.15f), CircleShape)
+                        .clickable { onBellClick() },
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
@@ -308,6 +312,23 @@ fun BloqueEncabezado(
                 Spacer(modifier = Modifier.width(8.dp))
             }
 
+            // Botón de configuración
+            Box(
+                modifier = Modifier
+                    .size(42.dp)
+                    .background(Color.White.copy(alpha = 0.1f), CircleShape)
+                    .border(1.dp, Color.White.copy(alpha = 0.15f), CircleShape)
+                    .clickable { onConfigClick() },
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Settings,
+                    contentDescription = "Configuración",
+                    tint = Color.White.copy(alpha = 0.8f),
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(8.dp))
             // Botón de logout
             Box(
                 modifier = Modifier
@@ -581,7 +602,7 @@ fun Modifier.bounceClick(scaleDown: Float = 0.96f) = composed {
 // ─── Tarjeta común para Advertencia de Conectividad (Offline State) ───────────
 @Composable
 fun TarjetaAdvertenciaConectividad(
-    segundosInactivo: Long,
+    segundosInactivo: Int,
     modifier: Modifier = Modifier
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "pulseAlpha")

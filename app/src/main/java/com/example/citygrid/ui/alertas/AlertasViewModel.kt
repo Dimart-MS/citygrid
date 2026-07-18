@@ -4,13 +4,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.citygrid.data.MqttManager
 import com.example.citygrid.data.SessionManager
-import com.example.citygrid.data.SupabaseManager
 import com.example.citygrid.data.repository.AlertaRepository
 import com.example.citygrid.data.repository.BitacoraRepository
 import com.example.citygrid.model.Alerta
 import com.example.citygrid.model.TipoAlerta
 import com.example.citygrid.model.db.DbAlerta
-import io.github.jan.supabase.realtime.realtime
+import com.example.citygrid.model.db.toAlerta
+import com.example.citygrid.utils.Logger
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -20,6 +20,14 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
+/** Estado combinado de alertas — evita 4 combines independientes. */
+data class AlertasUiState(
+    val alertas: List<Alerta> = emptyList(),
+    val criticalCount: Int = 0,
+    val warningCount: Int = 0,
+    val systemCounts: Map<String, Int> = emptyMap()
+)
+
 class AlertasViewModel(private val sessionManager: SessionManager) : ViewModel() {
 
     private val _selectedFilter = MutableStateFlow("Todas")
@@ -27,82 +35,66 @@ class AlertasViewModel(private val sessionManager: SessionManager) : ViewModel()
 
     private val _dbAlertas = MutableStateFlow<List<DbAlerta>>(emptyList())
 
-    // Mapeo reactivo de DbAlerta a Alerta para renderizado de interfaz y filtrado en ViewModel
-    // Combina alertas de DB + MQTT
-    val filteredAlertas: StateFlow<List<Alerta>> = combine(
+    /** Estado unificado — un solo combine sobre los mismos flows. */
+    val uiState: StateFlow<AlertasUiState> = combine(
         _dbAlertas,
         MqttManager.alertasFlow,
         _selectedFilter
     ) { dbAlertas, mqttAlertas, filter ->
-        // Convertir alertas de DB
-        val dbMapped = dbAlertas.map { dbAlerta ->
-            val sistemaName = when (dbAlerta.idSistema) {
-                1 -> "Residuos"
-                2 -> "Agua"
-                3 -> "Alumbrado"
-                else -> "Sistema"
-            }
-            val tipoAlertaVal = when (dbAlerta.idTipoAlerta) {
-                1 -> TipoAlerta.CRITICO
-                2 -> TipoAlerta.ADVERTENCIA
-                3 -> TipoAlerta.INFORMACION
-                4 -> TipoAlerta.NORMAL
-                else -> TipoAlerta.INFORMACION
-            }
-            val atendidaVal = dbAlerta.idEstadoAlerta == 2
+        val dbMapped = dbAlertas.map { it.toAlerta() }
+        val todas = dbMapped + mqttAlertas
 
-            val parsedTime = try {
-                dbAlerta.fechaHora?.let {
-                    java.time.OffsetDateTime.parse(it).toInstant().toEpochMilli()
-                } ?: System.currentTimeMillis()
-            } catch (e: Exception) {
-                System.currentTimeMillis()
-            }
-
-            Alerta(
-                id = dbAlerta.idAlerta?.toString() ?: "",
-                tipo = tipoAlertaVal,
-                titulo = "${sistemaName} - Incidencia",
-                descripcion = dbAlerta.descripcion,
-                sistema = sistemaName,
-                timestamp = parsedTime,
-                atendida = atendidaVal
-            )
-        }
-
-        // Combinar DB + MQTT
-        val todasAlertas = dbMapped + mqttAlertas
-
-        if (filter == "Todas") {
-            todasAlertas.sortedByDescending { it.timestamp }
+        // Filtrado
+        val filtered = if (filter == "Todas") {
+            todas.sortedByDescending { it.timestamp }
         } else {
-            todasAlertas.filter { it.sistema.equals(filter, ignoreCase = true) }
+            todas.filter { it.sistema.equals(filter, ignoreCase = true) }
                 .sortedByDescending { it.timestamp }
         }
-    }.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = emptyList()
-    )
 
-    // Contadores de alertas pendientes calculados dinámicamente desde DB + MQTT
-    val criticalCount: StateFlow<Int> = combine(
-        _dbAlertas,
-        MqttManager.alertasFlow
-    ) { dbAlertas, mqttAlertas ->
+        // Conteos
         val dbCriticas = dbAlertas.count { it.idTipoAlerta == 1 && it.idEstadoAlerta != 2 }
-        val mqttCriticas = mqttAlertas.count { it.tipo == TipoAlerta.CRITICO && !it.atendida }
-        dbCriticas + mqttCriticas
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
-
-    val warningCount: StateFlow<Int> = combine(
-        _dbAlertas,
-        MqttManager.alertasFlow
-    ) { dbAlertas, mqttAlertas ->
         val dbAdvertencias = dbAlertas.count { it.idTipoAlerta == 2 && it.idEstadoAlerta != 2 }
+        val mqttCriticas = mqttAlertas.count { it.tipo == TipoAlerta.CRITICO && !it.atendida }
         val mqttAdvertencias = mqttAlertas.count { it.tipo == TipoAlerta.ADVERTENCIA && !it.atendida }
-        dbAdvertencias + mqttAdvertencias
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
+
+        // Conteo por sistema
+        val dbBySystem = dbAlertas.filter { it.idEstadoAlerta != 2 }
+            .groupingBy { when (it.idSistema) { 1 -> "Residuos"; 2 -> "Agua"; 3 -> "Alumbrado"; else -> "Sistema" } }
+            .eachCount()
+        val mqttBySystem = mqttAlertas.filter { !it.atendida }
+            .groupingBy { it.sistema.ifBlank { "Sistema" } }
+            .eachCount()
+        val sysCounts = mutableMapOf<String, Int>().apply {
+            (dbBySystem.keys + mqttBySystem.keys + listOf("Residuos", "Agua", "Alumbrado", "Sistema")).forEach { key ->
+                put(key, (dbBySystem[key] ?: 0) + (mqttBySystem[key] ?: 0))
+            }
+        }
+
+        AlertasUiState(
+            alertas = filtered,
+            criticalCount = dbCriticas + mqttCriticas,
+            warningCount = dbAdvertencias + mqttAdvertencias,
+            systemCounts = sysCounts
+        )
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), AlertasUiState())
+
+    // Propiedades derivadas para compatibilidad con UI existente
+    val filteredAlertas: StateFlow<List<Alerta>> = uiState
+        .map { it.alertas }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val criticalCount: StateFlow<Int> = uiState
+        .map { it.criticalCount }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
+
+    val warningCount: StateFlow<Int> = uiState
+        .map { it.warningCount }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
+
+    val systemCounts: StateFlow<Map<String, Int>> = uiState
+        .map { it.systemCounts }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
 
     init {
         cargarAlertas()
@@ -110,24 +102,17 @@ class AlertasViewModel(private val sessionManager: SessionManager) : ViewModel()
 
     private fun cargarAlertas() {
         viewModelScope.launch {
-            // 1. Cargar datos iniciales por REST (Postgrest)
             val iniciales = AlertaRepository.obtenerAlertas()
-            android.util.Log.d("AlertasViewModel", "Cargadas ${iniciales.size} alertas iniciales desde Supabase REST API.")
+            Logger.d("AlertasViewModel", "Cargadas ${iniciales.size} alertas iniciales desde Supabase REST API.")
             _dbAlertas.value = iniciales
 
-            // 2. Conectar a Realtime y escuchar en segundo plano
             launch {
                 try {
-                    android.util.Log.d("AlertasViewModel", "Conectando a Supabase Realtime...")
-                    SupabaseManager.client.realtime.connect()
                     AlertaRepository.escucharAlertasRealtime().collect { actualizadas ->
-                        android.util.Log.d("AlertasViewModel", "Recibidas ${actualizadas.size} alertas actualizadas por Realtime.")
-                        if (actualizadas.isNotEmpty()) {
-                            _dbAlertas.value = actualizadas
-                        }
+                        if (actualizadas.isNotEmpty()) _dbAlertas.value = actualizadas
                     }
                 } catch (e: Exception) {
-                    android.util.Log.e("AlertasViewModel", "Error al conectar/escuchar Realtime de Supabase", e)
+                    Logger.e("AlertasViewModel", "Error al escuchar Realtime de Supabase", e)
                 }
             }
         }
@@ -142,18 +127,15 @@ class AlertasViewModel(private val sessionManager: SessionManager) : ViewModel()
         viewModelScope.launch {
             val result = AlertaRepository.marcarAlertaComoAtendida(idLong)
             if (result.isSuccess) {
-                android.util.Log.d("AlertasViewModel", "Alerta $idLong marcada como atendida exitosamente.")
-                // Registrar en la bitácora del sistema
+                Logger.d("AlertasViewModel", "Alerta $idLong marcada como atendida exitosamente.")
                 BitacoraRepository.registrar(
                     idUsuario = sessionManager.getIdUsuario(),
                     accion = "ALERTA_ATENDIDA",
                     descripcion = "Alerta id=$idLong marcada como atendida"
                 )
-                // Volver a cargar para refrescar la lista local inmediatamente
-                val actualizadas = AlertaRepository.obtenerAlertas()
-                _dbAlertas.value = actualizadas
+                _dbAlertas.value = AlertaRepository.obtenerAlertas()
             } else {
-                android.util.Log.e("AlertasViewModel", "Error al marcar alerta como atendida", result.exceptionOrNull())
+                Logger.e("AlertasViewModel", "Error al marcar alerta como atendida", result.exceptionOrNull())
             }
         }
     }

@@ -9,6 +9,8 @@ import com.example.citygrid.model.ContenedorData
 import com.example.citygrid.model.ResiduosState
 import com.example.citygrid.model.TipoAlerta
 import com.example.citygrid.model.db.DbAlerta
+import com.example.citygrid.model.db.toAlerta
+import com.example.citygrid.utils.Logger
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
@@ -35,32 +37,7 @@ class ResiduosViewModel : ViewModel() {
         MqttManager.alertasFlow
     ) { dbAlertas, mqttAlertas ->
         // Convertir y filtrar alertas de base de datos para el sistema de Residuos (idSistema = 1)
-        val dbMapped = dbAlertas.filter { it.idSistema == 1 }.map { dbAlerta ->
-            val tipoAlertaVal = when (dbAlerta.idTipoAlerta) {
-                1 -> TipoAlerta.CRITICO
-                2 -> TipoAlerta.ADVERTENCIA
-                3 -> TipoAlerta.INFORMACION
-                4 -> TipoAlerta.NORMAL
-                else -> TipoAlerta.INFORMACION
-            }
-            val parsedTime = try {
-                dbAlerta.fechaHora?.let {
-                    java.time.OffsetDateTime.parse(it).toInstant().toEpochMilli()
-                } ?: System.currentTimeMillis()
-            } catch (e: Exception) {
-                System.currentTimeMillis()
-            }
-
-            Alerta(
-                id = dbAlerta.idAlerta?.toString() ?: "",
-                tipo = tipoAlertaVal,
-                titulo = dbAlerta.descripcion,
-                descripcion = "Registrado en el historial",
-                sistema = "Residuos",
-                timestamp = parsedTime,
-                atendida = dbAlerta.idEstadoAlerta == 2
-            )
-        }
+        val dbMapped = dbAlertas.filter { it.idSistema == 1 }.map { it.toAlerta() }
 
         // Filtrar alertas MQTT para Residuos
         val mqttFiltered = mqttAlertas.filter { it.sistema.equals("Residuos", ignoreCase = true) }
@@ -79,7 +56,7 @@ class ResiduosViewModel : ViewModel() {
                 val alertas = AlertaRepository.obtenerAlertas()
                 _dbAlertas.value = alertas
             } catch (e: Exception) {
-                android.util.Log.e("ResiduosViewModel", "Error al cargar alertas de base de datos", e)
+                Logger.e("ResiduosViewModel", "Error al cargar alertas de base de datos", e)
             }
         }
     }

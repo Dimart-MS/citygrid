@@ -45,6 +45,9 @@ import com.example.citygrid.ui.theme.SurfaceCard
 import com.example.citygrid.ui.theme.SurfaceElevated
 import com.example.citygrid.ui.theme.DividerColor
 import com.example.citygrid.ui.theme.TextSecondary
+import com.example.citygrid.utils.formatTimestamp
+import com.example.citygrid.utils.rememberElapsedSeconds
+import com.example.citygrid.utils.Constants
 
 // NOTA: Las val ColorPrincipal/ColorNocheLuna/etc. han sido eliminadas de este archivo.
 // Se reemplazaron por referencias directas a Color.kt para evitar conflicto de nombres
@@ -55,19 +58,11 @@ import com.example.citygrid.ui.theme.TextSecondary
 fun AlumbradoScreen(viewModel: AlumbradoViewModel = viewModel()) {
     val state by viewModel.alumbradoState.collectAsState()
     val historial by viewModel.historial.collectAsState()
+    val enviandoComando by viewModel.enviandoComando.collectAsState()
     var mostrarHistorial by remember { mutableStateOf(false) }
 
-    var currentTime by remember { mutableStateOf(System.currentTimeMillis()) }
-    LaunchedEffect(state.conectado, state.ultimaActualizacion) {
-        if (!state.conectado) {
-            while (true) {
-                currentTime = System.currentTimeMillis()
-                delay(1000)
-            }
-        }
-    }
-
-    val segundosInactivo = ((currentTime - state.ultimaActualizacion) / 1000).coerceAtLeast(0)
+    // Usar utilidad reactiva para calcular segundos inactivo (sin bucle while)
+    val segundosInactivo = rememberElapsedSeconds(state.ultimaActualizacion)
 
     var visible by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { visible = true }
@@ -199,16 +194,19 @@ fun AlumbradoScreen(viewModel: AlumbradoViewModel = viewModel()) {
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = if (state.modo == "AUTO") "Modo Automático Activo" else "Modo Manual / Forzado",
+                                text = if (enviandoComando) "Enviando comando..."
+                                       else if (state.modo == "AUTO") "Modo Automático Activo"
+                                       else "Modo Manual / Forzado",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface
+                                color = if (enviandoComando) AmberAccent else MaterialTheme.colorScheme.onSurface
                             )
                             Text(
-                                text = if (state.modo == "AUTO") "Las luces responden al sensor de luz LDR." 
+                                text = if (enviandoComando) "Por favor espere..."
+                                       else if (state.modo == "AUTO") "Las luces responden al sensor de luz LDR."
                                        else "El sensor LDR está desactivado.",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = TextSecondary
+                                color = if (enviandoComando) AmberAccent else TextSecondary
                             )
                         }
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -221,7 +219,8 @@ fun AlumbradoScreen(viewModel: AlumbradoViewModel = viewModel()) {
                             )
                             Switch(
                                 checked = (state.modo == "AUTO"),
-                                onCheckedChange = { viewModel.cambiarModo(it) },
+                                onCheckedChange = { if (!enviandoComando) viewModel.cambiarModo(it) },
+                                enabled = !enviandoComando,
                                 colors = SwitchDefaults.colors(
                                     checkedThumbColor = Color.White,
                                     checkedTrackColor = CityGridPrimary,
@@ -282,7 +281,8 @@ fun AlumbradoScreen(viewModel: AlumbradoViewModel = viewModel()) {
                                 }
                                 Switch(
                                     checked = state.estadoOn,
-                                    onCheckedChange = { viewModel.alternarLucesManual(it) },
+                                    onCheckedChange = { if (!enviandoComando) viewModel.alternarLucesManual(it) },
+                                    enabled = !enviandoComando,
                                     colors = SwitchDefaults.colors(
                                         checkedThumbColor = Color.White,
                                         checkedTrackColor = CityGridPrimary,
@@ -394,8 +394,8 @@ fun AlumbradoScreen(viewModel: AlumbradoViewModel = viewModel()) {
                             letterSpacing = 0.8.sp
                         )
                         DetailRowAlumbrado(
-                            Icons.Default.Sensors, 
-                            "Sensor LDR", 
+                            Icons.Default.Sensors,
+                            "Sensor LDR",
                             if (state.conectado) "${state.ldrLux} Lux" else "Desconectado"
                         )
                         DetailRowAlumbrado(Icons.Default.Lightbulb, "Luminarias activas", "${state.luminariasActivas} luminarias")

@@ -14,7 +14,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Build
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.filled.WaterDrop
 import androidx.compose.material.icons.filled.WbSunny
 import androidx.compose.material3.*
@@ -48,7 +50,7 @@ import java.util.Locale
  * Módulo 2 — Dashboard General v2.
  *
  * Resumen del estado de los sistemas (residuos, agua, alumbrado) + alertas activas.
- * Los datos se obtienen desde Supabase via DashboardViewModel.
+ * Los datos se obtienen directamente desde MqttManager flows expuestos por DashboardViewModel.
  * Incluye animaciones de entrada escalonadas (fadeIn + slideInVertically).
  */
 @Composable
@@ -61,15 +63,28 @@ fun DashboardScreen(
     val sessionManager = remember { SessionManager(context) }
     val nombreUsuario = sessionManager.getNombre()
 
-    val residuoNombre by viewModel.residuoNombre.collectAsState()
-    val residuoPorcentaje by viewModel.residuoPorcentaje.collectAsState()
-    val nivelAgua by viewModel.nivelAgua.collectAsState()
-    val bombaActiva by viewModel.bombaActiva.collectAsState()
-    val alumbradoOn by viewModel.alumbradoOn.collectAsState()
-    val ldrLux by viewModel.ldrLux.collectAsState()
+    // Leer directamente de los flows expuestos por el ViewModel (sin duplicación)
+    val residuosState by viewModel.residuosState.collectAsState()
+    val aguaState by viewModel.aguaState.collectAsState()
+    val alumbradoState by viewModel.alumbradoState.collectAsState()
     val alertas by viewModel.alertas.collectAsState()
-    val ultimaActualizacion by viewModel.ultimaActualizacion.collectAsState()
     val esp32Conectado by viewModel.esp32Conectado.collectAsState()
+
+    // Calcular valores derivados
+    val maxContenedor = residuosState.contenedores.maxByOrNull { it.porcentaje }
+    val residuoNombre = maxContenedor?.nombre ?: "--"
+    val residuoPorcentaje = maxContenedor?.porcentaje ?: 0
+    val nivelAgua = aguaState.nivelTanque
+    val bombaActiva = aguaState.bombaActiva
+    val alumbradoOn = alumbradoState.estadoOn
+    val ldrLux = alumbradoState.ldrLux
+
+    // Usar el timestamp más reciente de todos los subsistemas
+    val ultimaActualizacion = maxOf(
+        residuosState.ultimoMensajeTimestamp,
+        aguaState.ultimaActualizacion,
+        alumbradoState.ultimaActualizacion
+    )
 
     val tiempoTexto = remember(ultimaActualizacion) {
         if (ultimaActualizacion == 0L) "Cargando..."
@@ -90,8 +105,10 @@ fun DashboardScreen(
         alertas.sortedByDescending { it.timestamp }.take(5)
     }
 
-    val fechaActual = SimpleDateFormat("dd / MM / yyyy · HH:mm", Locale.getDefault())
-        .format(Date()) + " hrs"
+    val fechaActual = remember {
+        SimpleDateFormat("dd / MM / yyyy · HH:mm", Locale.getDefault())
+            .format(Date()) + " hrs"
+    }
 
     // ── Controlar visibilidad de entrada (stagger animation) ──────────────
     var visible by remember { mutableStateOf(false) }
@@ -187,11 +204,26 @@ fun DashboardScreen(
                                     Spacer(Modifier.width(8.dp))
                                     Text(
                                         text = if (esp32Conectado)
-                                            "$alertasActivas alertas pendientes de revisión"
+                                            "ESP32 conectado"
                                         else
                                             "Sin señal — ESP32 desconectado",
                                         style = MaterialTheme.typography.labelSmall,
                                         color = if (esp32Conectado) StatusGreen else StatusRed,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                }
+                            }
+                            if (esp32Conectado && alertasActivas > 0) {
+                                Spacer(Modifier.height(6.dp))
+                                Box(
+                                    modifier = Modifier
+                                        .background(AmberAccent.copy(alpha = 0.15f), RoundedCornerShape(14.dp))
+                                        .padding(horizontal = 12.dp, vertical = 6.dp)
+                                ) {
+                                    Text(
+                                        text = "$alertasActivas alerta${if (alertasActivas > 1) "s" else ""} pendiente${if (alertasActivas > 1) "s" else ""}",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = AmberAccent,
                                         fontWeight = FontWeight.SemiBold
                                     )
                                 }
@@ -261,7 +293,8 @@ fun DashboardScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 20.dp)
-                            .border(1.dp, DividerColor, RoundedCornerShape(24.dp)),
+                            .border(1.dp, DividerColor, RoundedCornerShape(24.dp))
+                            .clickable { navController.navigate(Screen.Residuos.route) },
                         shape = RoundedCornerShape(24.dp),
                         colors = CardDefaults.cardColors(containerColor = SurfaceElevated),
                         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
@@ -284,6 +317,21 @@ fun DashboardScreen(
                                 color = CityGridPrimary
                             )
                             Spacer(Modifier.height(10.dp))
+                            val estadoResiduo = when {
+                                residuoPorcentaje > 85 -> "LLENO"
+                                residuoPorcentaje >= 50 -> "MEDIO"
+                                else -> "VACÍO"
+                            }
+                            val textoAccionResiduo = when {
+                                residuoPorcentaje > 85 -> "Requiere vaciado"
+                                residuoPorcentaje >= 50 -> "Nivel estable"
+                                else -> "Nivel óptimo"
+                            }
+                            val colorAccionResiduo = when {
+                                residuoPorcentaje > 85 -> StatusRed
+                                residuoPorcentaje >= 50 -> StatusYellow
+                                else -> StatusGreen
+                            }
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 verticalAlignment = Alignment.CenterVertically
@@ -294,12 +342,12 @@ fun DashboardScreen(
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                                 Spacer(Modifier.weight(1f))
-                                StatusBadge("LLENO")
+                                StatusBadge(estadoResiduo)
                                 Spacer(Modifier.width(8.dp))
                                 Text(
-                                    text = "Requiere vaciado",
+                                    text = textoAccionResiduo,
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = StatusRed
+                                    color = colorAccionResiduo
                                 )
                             }
                         }
@@ -329,7 +377,8 @@ fun DashboardScreen(
                             Card(
                                 modifier = Modifier
                                     .weight(1f)
-                                    .border(1.dp, DividerColor, RoundedCornerShape(24.dp)),
+                                    .border(1.dp, DividerColor, RoundedCornerShape(24.dp))
+                                    .clickable { navController.navigate(Screen.Agua.route) },
                                 shape = RoundedCornerShape(24.dp),
                                 colors = CardDefaults.cardColors(containerColor = SurfaceElevated),
                                 elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
@@ -393,7 +442,8 @@ fun DashboardScreen(
                             Card(
                                 modifier = Modifier
                                     .weight(1f)
-                                    .border(1.dp, DividerColor, RoundedCornerShape(24.dp)),
+                                    .border(1.dp, DividerColor, RoundedCornerShape(24.dp))
+                                    .clickable { navController.navigate(Screen.Alumbrado.route) },
                                 shape = RoundedCornerShape(24.dp),
                                 colors = CardDefaults.cardColors(containerColor = SurfaceElevated),
                                 elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
@@ -468,7 +518,8 @@ fun DashboardScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 20.dp)
-                            .border(1.dp, DividerColor, RoundedCornerShape(24.dp)),
+                            .border(1.dp, DividerColor, RoundedCornerShape(24.dp))
+                            .clickable { navController.navigate(Screen.Alertas.route) },
                         shape = RoundedCornerShape(24.dp),
                         colors = CardDefaults.cardColors(containerColor = SurfaceElevated),
                         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
@@ -484,7 +535,12 @@ fun DashboardScreen(
                                         .background(AmberAccent.copy(alpha = 0.15f), CircleShape),
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    Text("⚠", color = AmberAccent, fontSize = 16.sp)
+                                    Icon(
+                                        imageVector = Icons.Filled.Warning,
+                                        contentDescription = null,
+                                        tint = AmberAccent,
+                                        modifier = Modifier.size(18.dp)
+                                    )
                                 }
                                 Spacer(Modifier.width(14.dp))
                                 Column(modifier = Modifier.weight(1f)) {
@@ -509,23 +565,36 @@ fun DashboardScreen(
                                 horizontalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
                                 if (alertasCriticas > 0) {
-                                    Text(
-                                        text = "🔴 $alertasCriticas Crítica${if (alertasCriticas > 1) "s" else ""}",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = StatusRed,
-                                        fontWeight = FontWeight.Medium
-                                    )
-                                }
-                                if (alertasCriticas > 0 && alertasAdvert > 0) {
-                                    Text("·", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(8.dp)
+                                                .background(StatusRed, CircleShape)
+                                        )
+                                        Spacer(Modifier.width(4.dp))
+                                        Text(
+                                            text = "$alertasCriticas Crítica${if (alertasCriticas > 1) "s" else ""}",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = StatusRed,
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                    }
                                 }
                                 if (alertasAdvert > 0) {
-                                    Text(
-                                        text = "🟡 $alertasAdvert Advertencia${if (alertasAdvert > 1) "s" else ""}",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = AmberAccent,
-                                        fontWeight = FontWeight.Medium
-                                    )
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(8.dp)
+                                                .background(AmberAccent, CircleShape)
+                                        )
+                                        Spacer(Modifier.width(4.dp))
+                                        Text(
+                                            text = "$alertasAdvert Advertencia${if (alertasAdvert > 1) "s" else ""}",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = AmberAccent,
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -566,15 +635,25 @@ fun DashboardScreen(
             }
 
             // ── Lista de alertas recientes ──────────────────────────────
-            items(alertasRecientes) { alerta ->
-                AnimatedVisibility(
-                    visible = visible,
-                    enter = fadeIn(tween(400, delayMillis = 560)) + slideInVertically(tween(400, delayMillis = 560)) { it / 4 }
-                ) {
-                    AlertItemCard(
-                        alerta = alerta,
-                        modifier = Modifier.padding(horizontal = 20.dp)
+            if (alertasRecientes.isEmpty()) {
+                item {
+                    com.example.citygrid.ui.components.EmptyState(
+                        icon = Icons.Default.Check,
+                        titulo = "Todo en orden",
+                        subtitulo = "No hay alertas recientes — el sistema funciona correctamente"
                     )
+                }
+            } else {
+                items(alertasRecientes) { alerta ->
+                    AnimatedVisibility(
+                        visible = visible,
+                        enter = fadeIn(tween(400, delayMillis = 560)) + slideInVertically(tween(400, delayMillis = 560)) { it / 4 }
+                    ) {
+                        AlertItemCard(
+                            alerta = alerta,
+                            modifier = Modifier.padding(horizontal = 20.dp)
+                        )
+                    }
                 }
             }
         }

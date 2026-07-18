@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.material3.Scaffold
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -46,17 +47,34 @@ class MainActivity : ComponentActivity() {
             val currentRoute = navBackStackEntry?.destination?.route
             val onLogin = currentRoute == Screen.Login.route
 
-            CityGridTheme(darkTheme = false) {
+            val alertasCount by MqttManager.alertasFlow
+                .collectAsState()
+            val alertasPendientes = alertasCount.count { !it.atendida }
+
+            CityGridTheme(darkTheme = sessionManager.isTemaOscuro()) {
                 Scaffold(
                     modifier = Modifier.fillMaxSize(),
                     contentWindowInsets = WindowInsets(0, 0, 0, 0),
                     topBar = {
                         if (!onLogin) {
                             BloqueEncabezado(
+                                alertasPendientes = alertasPendientes,
                                 onLogoutClick = {
                                     sessionManager.cerrarSesion()
                                     navController.navigate(Screen.Login.route) {
                                         popUpTo(0) { inclusive = true }
+                                    }
+                                },
+                                onBellClick = {
+                                    navController.navigate(Screen.Alertas.route) {
+                                        launchSingleTop = true
+                                        restoreState = true
+                                    }
+                                },
+                                onConfigClick = {
+                                    navController.navigate(Screen.Configuracion.route) {
+                                        launchSingleTop = true
+                                        restoreState = true
                                     }
                                 }
                             )
@@ -74,10 +92,16 @@ class MainActivity : ComponentActivity() {
                     NavGraph(
                         navController = navController,
                         sessionManager = sessionManager,
-                        modifier = Modifier.padding(top = innerPadding.calculateTopPadding())
+                        modifier = Modifier.padding(top = innerPadding.calculateTopPadding()),
+                        onThemeChanged = { recreate() }
                     )
                 }
             }
         }
+    }
+
+    override fun onDestroy() {
+        MqttManager.shutdown()
+        super.onDestroy()
     }
 }

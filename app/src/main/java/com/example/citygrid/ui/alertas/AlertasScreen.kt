@@ -14,6 +14,8 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -29,6 +31,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.citygrid.data.SessionManager
 import com.example.citygrid.model.Alerta
 import com.example.citygrid.model.TipoAlerta
+import com.example.citygrid.ui.components.EmptyState
+import com.example.citygrid.ui.components.tiempoRelativo
 import com.example.citygrid.ui.theme.AmberAccent
 import com.example.citygrid.ui.theme.AmberDark
 import com.example.citygrid.ui.theme.AmberLight
@@ -55,6 +59,7 @@ fun AlertasScreen() {
     val activeFilter by viewModel.selectedFilter.collectAsState()
     val criticalCount by viewModel.criticalCount.collectAsState()
     val warningCount by viewModel.warningCount.collectAsState()
+    val systemCounts by viewModel.systemCounts.collectAsState()
 
     var alertaParaAtender by remember { mutableStateOf<Alerta?>(null) }
     var visible by remember { mutableStateOf(false) }
@@ -120,7 +125,10 @@ fun AlertasScreen() {
                 visible = visible,
                 enter = fadeIn(tween(400, delayMillis = 80)) + slideInVertically(tween(400, delayMillis = 80)) { it / 3 }
             ) {
-                BannerEstadoAlertas()
+                BannerEstadoAlertas(
+                    criticalCount = criticalCount,
+                    warningCount = warningCount
+                )
             }
         }
 
@@ -142,6 +150,8 @@ fun AlertasScreen() {
             ) {
                 FilaFiltrosAlertas(
                     selectedFilter = activeFilter,
+                    systemCounts = systemCounts,
+                    totalCount = listAlertas.size,
                     onFilterSelected = { viewModel.setFilter(it) }
                 )
             }
@@ -163,39 +173,25 @@ fun AlertasScreen() {
                         fontWeight = FontWeight.SemiBold,
                         color = TextPrimary
                     )
-                    Spacer(modifier = Modifier.weight(1f))
-                    Text(
-                        text = "Historial ›",
-                        color = CityGridPrimary,
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 13.sp,
-                        modifier = Modifier.clickable { }
-                    )
                 }
             }
         }
 
         if (listAlertas.isEmpty()) {
             item {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 32.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        "No hay alertas en este módulo",
-                        color = TextSecondary,
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                }
+                val isTodas = activeFilter == "Todas"
+                EmptyState(
+                    icon = Icons.Default.Notifications,
+                    titulo = if (isTodas) "Sin alertas" else "Sin alertas de $activeFilter",
+                    subtitulo = if (isTodas)
+                        "Cuando el sistema detecte alguna incidencia aparecerá aquí"
+                    else
+                        "No hay alertas registradas para este módulo"
+                )
             }
         } else {
             itemsIndexed(listAlertas) { index, alerta ->
-                val timeString = remember(alerta.timestamp) {
-                    val sdf = SimpleDateFormat("hh:mm a", Locale.getDefault())
-                    sdf.format(Date(alerta.timestamp))
-                }
+                val timeString = remember(alerta.timestamp) { tiempoRelativo(alerta.timestamp) }
                 AnimatedVisibility(
                     visible = visible,
                     enter = fadeIn(tween(400, delayMillis = 400 + index * 60)) +
@@ -213,11 +209,19 @@ fun AlertasScreen() {
 }
 
 @Composable
-fun BannerEstadoAlertas() {
+fun BannerEstadoAlertas(criticalCount: Int = 0, warningCount: Int = 0) {
     val dateString = remember {
         val sdf = SimpleDateFormat("dd/MM/yyyy · HH:mm 'hrs'", Locale.getDefault())
         sdf.format(Date())
     }
+
+    val totalActivas = criticalCount + warningCount
+    val (badgeText, dotColor, statusText) = when {
+        criticalCount > 0 -> Triple("⚠ $criticalCount CRÍTICA${if (criticalCount > 1) "S" else ""}", StatusRed, "Alertas críticas requieren atención inmediata")
+        warningCount > 0 -> Triple("⚠ $warningCount ADVERTENCIA${if (warningCount > 1) "S" else ""}", AmberAccent, "Alertas de advertencia pendientes")
+        else -> Triple("✓ SISTEMA OK", StatusGreen, "Sin alertas activas — todo en orden")
+    }
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -238,18 +242,20 @@ fun BannerEstadoAlertas() {
                     style = MaterialTheme.typography.bodySmall
                 )
                 Spacer(modifier = Modifier.weight(1f))
-                com.example.citygrid.ui.components.StatusBadge(estado = "OPERANDO")
+                com.example.citygrid.ui.components.StatusBadge(
+                    estado = if (totalActivas > 0) "$totalActivas ACTIVAS" else "OPERANDO"
+                )
             }
             Spacer(modifier = Modifier.height(12.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
                     modifier = Modifier
                         .size(8.dp)
-                        .background(StatusGreen, CircleShape)
+                        .background(dotColor, CircleShape)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "Sistema general activo",
+                    text = statusText,
                     color = Color.White,
                     fontWeight = FontWeight.SemiBold
                 )
@@ -310,17 +316,30 @@ fun TarjetaResumenAlertas(criticalCount: Int, warningCount: Int) {
 }
 
 @Composable
-fun FilaFiltrosAlertas(selectedFilter: String, onFilterSelected: (String) -> Unit) {
+fun FilaFiltrosAlertas(
+    selectedFilter: String,
+    systemCounts: Map<String, Int>,
+    totalCount: Int,
+    onFilterSelected: (String) -> Unit
+) {
     val scrollFiltros = rememberScrollState()
+    val allCount = systemCounts.values.sum().coerceAtLeast(totalCount)
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .horizontalScroll(scrollFiltros),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        listOf("Todas", "Residuos", "Agua", "Alumbrado", "Sistema").forEach { filter ->
+        ChipFiltro(
+            texto = "Todas",
+            count = allCount,
+            activo = selectedFilter == "Todas",
+            onClick = { onFilterSelected("Todas") }
+        )
+        listOf("Residuos", "Agua", "Alumbrado", "Sistema").forEach { filter ->
             ChipFiltro(
                 texto = filter,
+                count = systemCounts[filter] ?: 0,
                 activo = selectedFilter == filter,
                 onClick = { onFilterSelected(filter) }
             )
@@ -329,7 +348,12 @@ fun FilaFiltrosAlertas(selectedFilter: String, onFilterSelected: (String) -> Uni
 }
 
 @Composable
-fun ChipFiltro(texto: String, activo: Boolean, onClick: () -> Unit) {
+fun ChipFiltro(
+    texto: String,
+    count: Int = 0,
+    activo: Boolean,
+    onClick: () -> Unit
+) {
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(20.dp))
@@ -342,15 +366,36 @@ fun ChipFiltro(texto: String, activo: Boolean, onClick: () -> Unit) {
                 shape = RoundedCornerShape(20.dp)
             )
             .clickable { onClick() }
-            .padding(horizontal = 18.dp, vertical = 8.dp),
+            .padding(horizontal = 14.dp, vertical = 8.dp),
         contentAlignment = Alignment.Center
     ) {
-        Text(
-            text = texto,
-            color = if (activo) Color.White else TextSecondary,
-            fontSize = 13.sp,
-            fontWeight = if (activo) FontWeight.SemiBold else FontWeight.Normal
-        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = texto,
+                color = if (activo) Color.White else TextSecondary,
+                fontSize = 13.sp,
+                fontWeight = if (activo) FontWeight.SemiBold else FontWeight.Normal
+            )
+            if (count > 0) {
+                Spacer(Modifier.width(6.dp))
+                Box(
+                    modifier = Modifier
+                        .background(
+                            if (activo) Color.White.copy(alpha = 0.22f)
+                            else CityGridPrimary.copy(alpha = 0.12f),
+                            RoundedCornerShape(10.dp)
+                        )
+                        .padding(horizontal = 7.dp, vertical = 1.dp)
+                ) {
+                    Text(
+                        text = count.toString(),
+                        color = if (activo) Color.White else CityGridPrimary,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        }
     }
 }
 

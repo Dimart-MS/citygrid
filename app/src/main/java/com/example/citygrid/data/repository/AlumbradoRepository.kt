@@ -3,6 +3,7 @@ package com.example.citygrid.data.repository
 import com.example.citygrid.data.SupabaseManager
 import com.example.citygrid.model.db.DbLecturaLuminaria
 import com.example.citygrid.model.db.DbLuminaria
+import com.example.citygrid.utils.Logger
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Order
 import io.github.jan.supabase.realtime.selectAsFlow
@@ -14,7 +15,7 @@ object AlumbradoRepository {
         return try {
             SupabaseManager.client.from("luminarias").select().decodeList<DbLuminaria>()
         } catch (e: Exception) {
-            android.util.Log.e("AlumbradoRepository", "Error al obtener luminarias", e)
+            Logger.e("AlumbradoRepository", "Error al obtener luminarias", e)
             emptyList()
         }
     }
@@ -28,7 +29,7 @@ object AlumbradoRepository {
                 }
                 .decodeList<DbLecturaLuminaria>()
         } catch (e: Exception) {
-            android.util.Log.e("AlumbradoRepository", "Error al obtener lecturas luminaria", e)
+            Logger.e("AlumbradoRepository", "Error al obtener lecturas luminaria", e)
             emptyList()
         }
     }
@@ -43,7 +44,7 @@ object AlumbradoRepository {
             SupabaseManager.client.from("lecturasluminaria").insert(lectura)
             Result.success(Unit)
         } catch (e: Exception) {
-            android.util.Log.e("AlumbradoRepository", "Error al insertar lectura de alumbrado", e)
+            Logger.e("AlumbradoRepository", "Error al insertar lectura de alumbrado", e)
             Result.failure(e)
         }
     }
@@ -59,7 +60,7 @@ object AlumbradoRepository {
                 }
                 .decodeList<DbLecturaLuminaria>()
         } catch (e: Exception) {
-            android.util.Log.e("AlumbradoRepository", "Error al obtener últimas lecturas de luminaria", e)
+            Logger.e("AlumbradoRepository", "Error al obtener últimas lecturas de luminaria", e)
             emptyList()
         }
     }

@@ -1,5 +1,10 @@
 package com.example.citygrid.navigation
 
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -11,6 +16,8 @@ import com.example.citygrid.data.SessionManager
 import com.example.citygrid.ui.agua.AguaScreen
 import com.example.citygrid.ui.alertas.AlertasScreen
 import com.example.citygrid.ui.alumbrado.AlumbradoScreen
+import com.example.citygrid.ui.configuracion.ConfiguracionScreen
+import com.example.citygrid.ui.configuracion.ConfiguracionViewModel
 import com.example.citygrid.ui.dashboard.DashboardScreen
 import com.example.citygrid.ui.login.LoginScreen
 import com.example.citygrid.ui.mantenimiento.MantenimientoScreen
@@ -22,11 +29,14 @@ import com.example.citygrid.ui.residuos.ResiduosScreen
  * El destino inicial depende de la sesión: si hay sesión activa arranca en el
  * Dashboard, si no, en el Login (auth gate).
  */
+private const val ANIM_DURATION = 300
+
 @Composable
 fun NavGraph(
     navController: NavHostController,
     sessionManager: SessionManager,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onThemeChanged: () -> Unit = {}
 ) {
     val startDestination = if (sessionManager.isSesionActiva()) {
         Screen.Dashboard.route
@@ -37,7 +47,31 @@ fun NavGraph(
     NavHost(
         navController = navController,
         startDestination = startDestination,
-        modifier = modifier
+        modifier = modifier,
+        enterTransition = {
+            slideInHorizontally(
+                initialOffsetX = { it },
+                animationSpec = tween(ANIM_DURATION)
+            ) + fadeIn(animationSpec = tween(ANIM_DURATION))
+        },
+        exitTransition = {
+            slideOutHorizontally(
+                targetOffsetX = { -it / 3 },
+                animationSpec = tween(ANIM_DURATION)
+            ) + fadeOut(animationSpec = tween(ANIM_DURATION))
+        },
+        popEnterTransition = {
+            slideInHorizontally(
+                initialOffsetX = { -it / 3 },
+                animationSpec = tween(ANIM_DURATION)
+            ) + fadeIn(animationSpec = tween(ANIM_DURATION))
+        },
+        popExitTransition = {
+            slideOutHorizontally(
+                targetOffsetX = { it },
+                animationSpec = tween(ANIM_DURATION)
+            ) + fadeOut(animationSpec = tween(ANIM_DURATION))
+        }
     ) {
         // ── Login (Módulo 1) ────────────────────────────────────────────
         composable(Screen.Login.route) {
@@ -76,6 +110,17 @@ fun NavGraph(
         }
         composable(Screen.Mantenimiento.route) {
             MantenimientoScreen()
+        }
+        composable(Screen.Configuracion.route) {
+            ConfiguracionScreen(
+                viewModel = ConfiguracionViewModel(sessionManager),
+                onLogout = {
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(0) { inclusive = true }
+                    }
+                },
+                onThemeChanged = onThemeChanged
+            )
         }
     }
 }

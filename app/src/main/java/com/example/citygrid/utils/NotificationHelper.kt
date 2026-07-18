@@ -67,7 +67,7 @@ object NotificationHelper {
         try {
             notificationManager.notify(notificationId, builder.build())
         } catch (e: SecurityException) {
-            android.util.Log.e("NotificationHelper", "Falta permiso POST_NOTIFICATIONS", e)
+            Logger.e("NotificationHelper", "Falta permiso POST_NOTIFICATIONS", e)
         }
     }
 }

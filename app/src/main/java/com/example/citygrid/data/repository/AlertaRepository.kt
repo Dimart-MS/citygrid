@@ -3,6 +3,7 @@ package com.example.citygrid.data.repository
 import com.example.citygrid.data.SupabaseManager
 import com.example.citygrid.model.db.DbAlerta
 import com.example.citygrid.model.db.DbNotificacion
+import com.example.citygrid.utils.Logger
 import io.github.jan.supabase.annotations.SupabaseExperimental
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.realtime.selectAsFlow
@@ -20,7 +21,7 @@ object AlertaRepository {
                 .select()
                 .decodeList<DbAlerta>()
         } catch (e: Exception) {
-            android.util.Log.e("AlertaRepository", "Error al obtener alertas por REST", e)
+            Logger.e("AlertaRepository", "Error al obtener alertas por REST", e)
             emptyList()
         }
     }
@@ -44,7 +45,7 @@ object AlertaRepository {
                 .select()
                 .decodeList<DbNotificacion>()
         } catch (e: Exception) {
-            android.util.Log.e("AlertaRepository", "Error al obtener notificaciones por REST", e)
+            Logger.e("AlertaRepository", "Error al obtener notificaciones por REST", e)
             emptyList()
         }
     }
@@ -81,7 +82,7 @@ object AlertaRepository {
                 .insert(dbAlerta)
             Result.success(Unit)
         } catch (e: Exception) {
-            android.util.Log.e("AlertaRepository", "Error al insertar alerta", e)
+            Logger.e("AlertaRepository", "Error al insertar alerta", e)
             Result.failure(e)
         }
     }

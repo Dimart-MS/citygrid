@@ -63,10 +63,10 @@ private val DarkColorScheme = darkColorScheme(
 
 @Composable
 fun CityGridTheme(
-    darkTheme: Boolean = false, // Siempre light mode
+    darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit
 ) {
-    val colorScheme = LightColorScheme
+    val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
 
     MaterialTheme(
         colorScheme = colorScheme,

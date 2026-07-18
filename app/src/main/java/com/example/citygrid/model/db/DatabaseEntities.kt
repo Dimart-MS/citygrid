@@ -115,6 +115,34 @@ data class DbAlerta(
     @SerialName("fechahora") val fechaHora: String? = null
 )
 
+/**
+ * Convierte una entidad de BD [DbAlerta] al modelo de UI [Alerta].
+ * Centraliza el mapeo que antes estaba duplicado en 3 ViewModels.
+ */
+fun DbAlerta.toAlerta(): com.example.citygrid.model.Alerta {
+    val sistema = when (idSistema) { 1 -> "Residuos"; 2 -> "Agua"; 3 -> "Alumbrado"; else -> "Sistema" }
+    val tipo = when (idTipoAlerta) {
+        1 -> com.example.citygrid.model.TipoAlerta.CRITICO
+        2 -> com.example.citygrid.model.TipoAlerta.ADVERTENCIA
+        3 -> com.example.citygrid.model.TipoAlerta.INFORMACION
+        4 -> com.example.citygrid.model.TipoAlerta.NORMAL
+        else -> com.example.citygrid.model.TipoAlerta.INFORMACION
+    }
+    val parsedTime = try {
+        fechaHora?.let { java.time.OffsetDateTime.parse(it).toInstant().toEpochMilli() }
+            ?: System.currentTimeMillis()
+    } catch (_: Exception) { System.currentTimeMillis() }
+    return com.example.citygrid.model.Alerta(
+        id = idAlerta?.toString() ?: "",
+        tipo = tipo,
+        titulo = "$sistema - Incidencia",
+        descripcion = descripcion,
+        sistema = sistema,
+        timestamp = parsedTime,
+        atendida = idEstadoAlerta == 2
+    )
+}
+
 @Serializable
 data class DbNotificacion(
     @SerialName("idnotificacion") val idNotificacion: Long? = null,

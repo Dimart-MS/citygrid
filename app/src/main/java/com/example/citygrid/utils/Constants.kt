@@ -29,6 +29,21 @@ object Constants {
     const val UMBRAL_AGUA_BAJO   = 30
     const val UMBRAL_LUZ_ADC     = 1500
 
+    // Umbrales de residuos (porcentaje)
+    const val UMBRAL_RESIDUOS_CRITICO = 85
+    const val UMBRAL_RESIDUOS_MEDIO = 50
+
+    // Tiempos
+    const val TIEMPO_OVERRIDE_MANUAL_MS = 60000L // 60 segundos
+    const val INTERVALO_CHECK_CONEXION_MS = 1000L // 1 segundo
+    const val TIMEOUT_CONEXION_MQTT_MS = 2 * 60 * 1000L // 2 minutos
+    const val DEBOUNCE_SWITCH_MS = 300L // 300ms para evitar doble-click en switches
+
+    // Límites de listas
+    const val MAX_EVENTOS_RECIENTES = 3
+    const val MAX_ALERTAS_DASHBOARD = 10
+    const val MAX_HISTORIAL_LECTURAS = 50
+
     // SharedPreferences
     const val PREFS_NAME         = "citygrid_prefs"
     const val KEY_CORREO         = "usuario_correo"

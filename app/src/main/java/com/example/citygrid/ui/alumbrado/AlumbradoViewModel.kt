@@ -7,6 +7,7 @@ import com.example.citygrid.data.repository.AlumbradoRepository
 import com.example.citygrid.model.AlumbradoState
 import com.example.citygrid.model.db.DbLecturaLuminaria
 import com.example.citygrid.utils.Constants
+import com.example.citygrid.utils.Logger
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -19,6 +20,10 @@ class AlumbradoViewModel : ViewModel() {
     private val _historial = MutableStateFlow<List<DbLecturaLuminaria>>(emptyList())
     val historial: StateFlow<List<DbLecturaLuminaria>> = _historial.asStateFlow()
 
+    /** Estado de envío de comando MQTT para feedback visual */
+    private val _enviandoComando = MutableStateFlow(false)
+    val enviandoComando: StateFlow<Boolean> = _enviandoComando.asStateFlow()
+
     init {
         cargarHistorial()
     }
@@ -26,43 +31,71 @@ class AlumbradoViewModel : ViewModel() {
     fun cargarHistorial(idLuminaria: Int = 1) {
         viewModelScope.launch {
             try {
-                val lecturas = AlumbradoRepository.obtenerUltimasLecturasLuminaria(idLuminaria, 50)
+                val lecturas = AlumbradoRepository.obtenerUltimasLecturasLuminaria(idLuminaria, Constants.MAX_HISTORIAL_LECTURAS)
                 _historial.value = lecturas
             } catch (e: Exception) {
-                android.util.Log.e("AlumbradoViewModel", "Error al cargar historial", e)
+                Logger.e("AlumbradoViewModel", "Error al cargar historial", e)
             }
         }
     }
 
+    /**
+     * Alterna las luces manualmente enviando comando MQTT.
+     * Incluye feedback visual con estado de envío y actualización optimista.
+     */
     fun alternarLucesManual(encender: Boolean) {
-        // Enviar instrucción al ESP32 por MQTT usando la constante correcta
-        val payload = if (encender) "1" else "0"
-        MqttManager.publish(Constants.TOPIC_CTRL_LUCES, payload)
-        
-        // Actualización optimista inmediata para evitar snapback en la UI
-        val currentState = MqttManager.alumbradoFlow.value
-        MqttManager.updateAlumbradoState(
-            currentState.copy(
-                estadoOn = encender,
-                modo = "MANUAL",
-                ultimaActualizacion = System.currentTimeMillis()
-            )
-        )
+        viewModelScope.launch {
+            _enviandoComando.value = true
+
+            try {
+                // Enviar instrucción al ESP32 por MQTT usando la constante correcta
+                val payload = if (encender) "1" else "0"
+                MqttManager.publish(Constants.TOPIC_CTRL_LUCES, payload)
+
+                // Actualización optimista inmediata para evitar snapback en la UI
+                val currentState = MqttManager.alumbradoFlow.value
+                MqttManager.updateAlumbradoState(
+                    currentState.copy(
+                        estadoOn = encender,
+                        modo = "MANUAL",
+                        ultimaActualizacion = System.currentTimeMillis()
+                    )
+                )
+
+                kotlinx.coroutines.delay(500)
+            } finally {
+                _enviandoComando.value = false
+            }
+        }
     }
 
+    /**
+     * Cambia entre modo AUTO y MANUAL.
+     * En AUTO, el ESP32 usa el sensor LDR para controlar las luces automáticamente.
+     */
     fun cambiarModo(automatico: Boolean) {
-        val payload = if (automatico) "2" else {
-            if (MqttManager.alumbradoFlow.value.estadoOn) "1" else "0"
-        }
-        MqttManager.publish(Constants.TOPIC_CTRL_LUCES, payload)
+        viewModelScope.launch {
+            _enviandoComando.value = true
 
-        // Actualización optimista inmediata
-        val currentState = MqttManager.alumbradoFlow.value
-        MqttManager.updateAlumbradoState(
-            currentState.copy(
-                modo = if (automatico) "AUTO" else "MANUAL",
-                ultimaActualizacion = System.currentTimeMillis()
-            )
-        )
+            try {
+                val payload = if (automatico) "2" else {
+                    if (MqttManager.alumbradoFlow.value.estadoOn) "1" else "0"
+                }
+                MqttManager.publish(Constants.TOPIC_CTRL_LUCES, payload)
+
+                // Actualización optimista inmediata
+                val currentState = MqttManager.alumbradoFlow.value
+                MqttManager.updateAlumbradoState(
+                    currentState.copy(
+                        modo = if (automatico) "AUTO" else "MANUAL",
+                        ultimaActualizacion = System.currentTimeMillis()
+                    )
+                )
+
+                kotlinx.coroutines.delay(500)
+            } finally {
+                _enviandoComando.value = false
+            }
+        }
     }
 }

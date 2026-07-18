@@ -4,6 +4,7 @@ import com.example.citygrid.data.SupabaseManager
 import com.example.citygrid.model.db.DbBomba
 import com.example.citygrid.model.db.DbLecturaAgua
 import com.example.citygrid.model.db.DbTanque
+import com.example.citygrid.utils.Logger
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Order
 import io.github.jan.supabase.realtime.selectAsFlow
@@ -15,7 +16,7 @@ object AguaRepository {
         return try {
             SupabaseManager.client.from("tanques").select().decodeList<DbTanque>()
         } catch (e: Exception) {
-            android.util.Log.e("AguaRepository", "Error al obtener tanques", e)
+            Logger.e("AguaRepository", "Error al obtener tanques", e)
             emptyList()
         }
     }
@@ -29,7 +30,7 @@ object AguaRepository {
                 }
                 .decodeList<DbLecturaAgua>()
         } catch (e: Exception) {
-            android.util.Log.e("AguaRepository", "Error al obtener lecturas de agua", e)
+            Logger.e("AguaRepository", "Error al obtener lecturas de agua", e)
             emptyList()
         }
     }
@@ -38,7 +39,7 @@ object AguaRepository {
         return try {
             SupabaseManager.client.from("bombas").select().decodeList<DbBomba>()
         } catch (e: Exception) {
-            android.util.Log.e("AguaRepository", "Error al obtener bombas", e)
+            Logger.e("AguaRepository", "Error al obtener bombas", e)
             emptyList()
         }
     }
@@ -52,7 +53,7 @@ object AguaRepository {
                 }
                 .decodeSingleOrNull<DbBomba>()
         } catch (e: Exception) {
-            android.util.Log.e("AguaRepository", "Error al obtener estado bomba", e)
+            Logger.e("AguaRepository", "Error al obtener estado bomba", e)
             null
         }
     }
@@ -68,7 +69,7 @@ object AguaRepository {
             SupabaseManager.client.from("lecturasagua").insert(lectura)
             Result.success(Unit)
         } catch (e: Exception) {
-            android.util.Log.e("AguaRepository", "Error al insertar lectura de agua", e)
+            Logger.e("AguaRepository", "Error al insertar lectura de agua", e)
             Result.failure(e)
         }
     }
@@ -84,7 +85,7 @@ object AguaRepository {
                 }
                 .decodeList<DbLecturaAgua>()
         } catch (e: Exception) {
-            android.util.Log.e("AguaRepository", "Error al obtener últimas lecturas de agua", e)
+            Logger.e("AguaRepository", "Error al obtener últimas lecturas de agua", e)
             emptyList()
         }
     }

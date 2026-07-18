@@ -7,10 +7,12 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -28,10 +30,13 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -60,6 +65,7 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
     val context = LocalContext.current
     val sessionManager = remember { SessionManager(context) }
     val scope = rememberCoroutineScope()
+    val keyboardController = LocalSoftwareKeyboardController.current
 
     var correo by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -112,6 +118,10 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
                 .fillMaxSize()
                 .statusBarsPadding()
                 .verticalScroll(rememberScrollState())
+                .imePadding()
+                .pointerInput(Unit) {
+                    detectTapGestures(onTap = { keyboardController?.hide() })
+                }
                 .padding(horizontal = 28.dp, vertical = 32.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -202,7 +212,13 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
                                 tint = CityGridPrimary
                             )
                         },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Email,
+                            imeAction = ImeAction.Next
+                        ),
+                        keyboardActions = KeyboardActions(
+                            onNext = { keyboardController?.hide() }
+                        ),
                         singleLine = true,
                         shape = RoundedCornerShape(16.dp)
                     )
@@ -235,7 +251,13 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
                                 )
                             }
                         },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Password,
+                            imeAction = ImeAction.Done
+                        ),
+                        keyboardActions = KeyboardActions(
+                            onDone = { keyboardController?.hide() }
+                        ),
                         singleLine = true,
                         shape = RoundedCornerShape(16.dp)
                     )
@@ -303,18 +325,21 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
                                 }
                                 isLoading = true
                                 scope.launch {
-                                    val result = UsuarioRepository.login(correo, password)
-                                    result.fold(
-                                        onSuccess = { usuario ->
-                                            sessionManager.guardarSesion(usuario.correo, usuario.nombre, usuario.idUsuario)
-                                            onLoginSuccess()
-                                        },
-                                        onFailure = { error ->
-                                            errorMsg = error.message ?: "Credenciales incorrectas"
-                                        }
-                                    )
-                                    isLoading = false
-                                    buttonPressed = false
+                                    try {
+                                        val result = UsuarioRepository.login(correo, password)
+                                        result.fold(
+                                            onSuccess = { usuario ->
+                                                sessionManager.guardarSesion(usuario.correo, usuario.nombre, usuario.idUsuario)
+                                                onLoginSuccess()
+                                            },
+                                            onFailure = { error ->
+                                                errorMsg = error.message ?: "Credenciales incorrectas"
+                                            }
+                                        )
+                                    } finally {
+                                        isLoading = false
+                                        buttonPressed = false
+                                    }
                                 }
                             },
                         contentAlignment = Alignment.Center
@@ -347,6 +372,7 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
             )
 
             Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(40.dp))
         }
     }
 }

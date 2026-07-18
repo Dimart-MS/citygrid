@@ -1,0 +1,459 @@
+{
+	"version": 1,
+	"author": "CityGrid",
+	"editor": "wokwi",
+	"parts": [
+		{
+			"type": "board-esp32-devkit-c-v4",
+			"id": "esp",
+			"top": -633.6,
+			"left": -52.76,
+			"attrs": {}
+		},
+		{
+			"type": "wokwi-text",
+			"id": "title",
+			"top": -290,
+			"left": -450,
+			"attrs": { "text": "CityGrid: sensores, actuadores y MQTT" }
+		},
+		{
+			"type": "wokwi-hc-sr04",
+			"id": "trash1",
+			"top": -286.5,
+			"left": -628.1,
+			"attrs": { "distance": "15" }
+		},
+		{
+			"type": "wokwi-hc-sr04",
+			"id": "trash2",
+			"top": -40,
+			"left": -430,
+			"attrs": { "distance": "10" }
+		},
+		{
+			"type": "wokwi-hc-sr04",
+			"id": "trash3",
+			"top": 174.3,
+			"left": -800.9,
+			"attrs": { "distance": "5" }
+		},
+		{
+			"type": "wokwi-hc-sr04",
+			"id": "water",
+			"top": 385.5,
+			"left": -608.9,
+			"attrs": { "distance": "16" }
+		},
+		{
+			"type": "wokwi-text",
+			"id": "trash1Label",
+			"top": -245,
+			"left": -430,
+			"attrs": { "text": "Bote 1: Plastico" }
+		},
+		{
+			"type": "wokwi-text",
+			"id": "trash2Label",
+			"top": -75,
+			"left": -430,
+			"attrs": { "text": "Bote 2: Inorganico" }
+		},
+		{
+			"type": "wokwi-text",
+			"id": "trash3Label",
+			"top": 95,
+			"left": -430,
+			"attrs": { "text": "Bote 3: Organico" }
+		},
+		{
+			"type": "wokwi-text",
+			"id": "waterLabel",
+			"top": 265,
+			"left": -430,
+			"attrs": { "text": "Deposito de agua" }
+		},
+		{
+			"type": "wokwi-resistor",
+			"id": "echo1Top",
+			"top": -177.6,
+			"left": -86.95,
+			"rotate": 90,
+			"attrs": { "value": "1k" }
+		},
+		{
+			"type": "wokwi-resistor",
+			"id": "echo1Bottom",
+			"top": -115,
+			"left": -140,
+			"rotate": 90,
+			"attrs": { "value": "2k" }
+		},
+		{
+			"type": "wokwi-resistor",
+			"id": "echo2Top",
+			"top": -20,
+			"left": -140,
+			"rotate": 90,
+			"attrs": { "value": "1k" }
+		},
+		{
+			"type": "wokwi-resistor",
+			"id": "echo2Bottom",
+			"top": 55,
+			"left": -140,
+			"rotate": 90,
+			"attrs": { "value": "2k" }
+		},
+		{
+			"type": "wokwi-resistor",
+			"id": "echo3Top",
+			"top": 150,
+			"left": -140,
+			"rotate": 90,
+			"attrs": { "value": "1k" }
+		},
+		{
+			"type": "wokwi-resistor",
+			"id": "echo3Bottom",
+			"top": 225,
+			"left": -140,
+			"rotate": 90,
+			"attrs": { "value": "2k" }
+		},
+		{
+			"type": "wokwi-resistor",
+			"id": "echoWaterTop",
+			"top": 320,
+			"left": -140,
+			"rotate": 90,
+			"attrs": { "value": "1k" }
+		},
+		{
+			"type": "wokwi-resistor",
+			"id": "echoWaterBottom",
+			"top": 398.4,
+			"left": -144.55,
+			"rotate": 90,
+			"attrs": { "value": "2k" }
+		},
+		{
+			"type": "wokwi-text",
+			"id": "dividerLabel",
+			"top": 451.2,
+			"left": -192,
+			"attrs": { "text": "Divisores ECHO: 1k / 2k (5V a 3.3V)" }
+		},
+		{
+			"type": "wokwi-led",
+			"id": "ledTrash1",
+			"top": -200,
+			"left": 590,
+			"attrs": { "color": "red" }
+		},
+		{
+			"type": "wokwi-led",
+			"id": "ledTrash2",
+			"top": -120,
+			"left": 590,
+			"attrs": { "color": "red" }
+		},
+		{
+			"type": "wokwi-led",
+			"id": "ledTrash3",
+			"top": -40,
+			"left": 590,
+			"attrs": { "color": "red" }
+		},
+		{
+			"type": "wokwi-resistor",
+			"id": "ledTrash1R",
+			"top": -200,
+			"left": 490,
+			"attrs": { "value": "220" }
+		},
+		{
+			"type": "wokwi-resistor",
+			"id": "ledTrash2R",
+			"top": -120,
+			"left": 490,
+			"attrs": { "value": "220" }
+		},
+		{
+			"type": "wokwi-resistor",
+			"id": "ledTrash3R",
+			"top": -40,
+			"left": 490,
+			"attrs": { "value": "220" }
+		},
+		{
+			"type": "wokwi-text",
+			"id": "ledTrashLabel",
+			"top": -250,
+			"left": 470,
+			"attrs": { "text": "Indicadores de botes llenos" }
+		},
+		{
+			"type": "wokwi-photoresistor-sensor",
+			"id": "ldr",
+			"top": 300,
+			"left": 570,
+			"attrs": { "lux": "1000" }
+		},
+		{
+			"type": "wokwi-text",
+			"id": "ldrLabel",
+			"top": 265,
+			"left": 570,
+			"attrs": { "text": "LDR: GPIO34" }
+		},
+		{
+			"type": "wokwi-led",
+			"id": "pumpIndicator",
+			"top": 447.6,
+			"left": 570.2,
+			"attrs": { "color": "blue" }
+		},
+		{
+			"type": "wokwi-resistor",
+			"id": "pumpIndicatorR",
+			"top": 450,
+			"left": 470,
+			"attrs": { "value": "220" }
+		},
+		{
+			"type": "wokwi-text",
+			"id": "pumpLabel",
+			"top": 415,
+			"left": 470,
+			"attrs": { "text": "Salida bomba (GPIO32)" }
+		},
+		{
+			"type": "wokwi-led",
+			"id": "outdoorIndicator",
+			"top": 543.6,
+			"left": 570.2,
+			"attrs": { "color": "yellow" }
+		},
+		{
+			"type": "wokwi-resistor",
+			"id": "outdoorIndicatorR",
+			"top": 541.55,
+			"left": 470.4,
+			"attrs": { "value": "220" }
+		},
+		{
+			"type": "wokwi-text",
+			"id": "outdoorLabel",
+			"top": 505,
+			"left": 450,
+			"attrs": { "text": "LEDs exteriores (GPIO33)" }
+		},
+		{
+			"type": "wokwi-relay-module",
+			"id": "relay",
+			"top": 550,
+			"left": -380,
+			"attrs": { "transistor": "npn" }
+		},
+		{
+			"type": "wokwi-led",
+			"id": "lamp",
+			"top": 591.6,
+			"left": -82.6,
+			"attrs": { "color": "yellow" }
+		},
+		{
+			"type": "wokwi-resistor",
+			"id": "lampR",
+			"top": 590,
+			"left": -180,
+			"attrs": { "value": "220" }
+		},
+		{
+			"type": "wokwi-text",
+			"id": "relayLabel",
+			"top": 508.8,
+			"left": -230.4,
+			"attrs": { "text": "Relevador activo-bajo: GPIO23" }
+		},
+		{
+			"type": "wokwi-text",
+			"id": "serialLabel",
+			"top": 700,
+			"left": 120,
+			"attrs": { "text": "UART: 9600 baudios" }
+		},
+		{
+			"type": "wokwi-led",
+			"id": "ledExt1",
+			"top": 640,
+			"left": 350,
+			"attrs": { "color": "white", "label": "LED Ext 1" }
+		},
+		{
+			"type": "wokwi-led",
+			"id": "ledExt2",
+			"top": 640,
+			"left": 430,
+			"attrs": { "color": "white", "label": "LED Ext 2" }
+		},
+		{
+			"type": "wokwi-led",
+			"id": "ledExt3",
+			"top": 640,
+			"left": 510,
+			"attrs": { "color": "white", "label": "LED Ext 3" }
+		},
+		{
+			"type": "wokwi-led",
+			"id": "ledExt4",
+			"top": 640,
+			"left": 590,
+			"attrs": { "color": "white", "label": "LED Ext 4" }
+		},
+		{
+			"type": "wokwi-led",
+			"id": "ledExt5",
+			"top": 640,
+			"left": 670,
+			"attrs": { "color": "white", "label": "LED Ext 5" }
+		},
+		{
+			"type": "wokwi-resistor",
+			"id": "rExt1",
+			"top": 700,
+			"left": 350,
+			"rotate": 90,
+			"attrs": { "value": "220" }
+		},
+		{
+			"type": "wokwi-resistor",
+			"id": "rExt2",
+			"top": 700,
+			"left": 430,
+			"rotate": 90,
+			"attrs": { "value": "220" }
+		},
+		{
+			"type": "wokwi-resistor",
+			"id": "rExt3",
+			"top": 700,
+			"left": 510,
+			"rotate": 90,
+			"attrs": { "value": "220" }
+		},
+		{
+			"type": "wokwi-resistor",
+			"id": "rExt4",
+			"top": 700,
+			"left": 590,
+			"rotate": 90,
+			"attrs": { "value": "220" }
+		},
+		{
+			"type": "wokwi-resistor",
+			"id": "rExt5",
+			"top": 700,
+			"left": 670,
+			"rotate": 90,
+			"attrs": { "value": "220" }
+		},
+		{
+			"type": "wokwi-text",
+			"id": "extLedsLabel",
+			"top": 610,
+			"left": 350,
+			"attrs": { "text": "LEDs exteriores en paralelo (via MOSFET GPIO33)" }
+		},
+		{
+			"type": "wokwi-dc-motor",
+			"id": "pump",
+			"top": 750,
+			"left": 350,
+			"attrs": { "label": "Bomba\nAgua 5V" }
+		},
+		{
+			"type": "wokwi-text",
+			"id": "pumpMotorLabel",
+			"top": 720,
+			"left": 350,
+			"attrs": { "text": "Bomba sumergible (via MOSFET GPIO32)" }
+		}
+	],
+	"connections": [
+		["esp:TX", "$serialMonitor:RX", "", []],
+		["esp:RX", "$serialMonitor:TX", "", []],
+		["esp:5V", "trash1:VCC", "red", []],
+		["esp:GND.1", "trash1:GND", "black", []],
+		["esp:4", "trash1:TRIG", "green", []],
+		["trash1:ECHO", "echo1Top:1", "orange", []],
+		["echo1Top:2", "esp:5", "orange", ["v-132.8", "h331.41"]],
+		["esp:5", "echo1Bottom:1", "orange", []],
+		["echo1Bottom:2", "esp:GND.1", "black", []],
+		["esp:5V", "trash2:VCC", "red", []],
+		["esp:GND.1", "trash2:GND", "black", []],
+		["esp:18", "trash2:TRIG", "green", []],
+		["trash2:ECHO", "echo2Top:1", "orange", []],
+		["echo2Top:2", "esp:19", "orange", []],
+		["esp:19", "echo2Bottom:1", "orange", []],
+		["echo2Bottom:2", "esp:GND.1", "black", []],
+		["esp:5V", "trash3:VCC", "red", []],
+		["esp:GND.1", "trash3:GND", "black", []],
+		["esp:21", "trash3:TRIG", "green", []],
+		["trash3:ECHO", "echo3Top:1", "orange", []],
+		["echo3Top:2", "esp:22", "orange", []],
+		["esp:22", "echo3Bottom:1", "orange", []],
+		["echo3Bottom:2", "esp:GND.1", "black", []],
+		["esp:5V", "water:VCC", "red", []],
+		["esp:GND.1", "water:GND", "black", []],
+		["esp:25", "water:TRIG", "green", []],
+		["water:ECHO", "echoWaterTop:1", "orange", []],
+		["echoWaterTop:2", "esp:26", "orange", []],
+		["esp:26", "echoWaterBottom:1", "orange", []],
+		["echoWaterBottom:2", "esp:GND.1", "black", []],
+		["esp:13", "ledTrash1R:1", "red", []],
+		["ledTrash1R:2", "ledTrash1:A", "red", []],
+		["ledTrash1:C", "esp:GND.1", "black", []],
+		["esp:14", "ledTrash2R:1", "red", []],
+		["ledTrash2R:2", "ledTrash2:A", "red", []],
+		["ledTrash2:C", "esp:GND.1", "black", []],
+		["esp:27", "ledTrash3R:1", "red", []],
+		["ledTrash3R:2", "ledTrash3:A", "red", []],
+		["ledTrash3:C", "esp:GND.1", "black", []],
+		["esp:3V3", "ldr:VCC", "red", []],
+		["esp:GND.1", "ldr:GND", "black", []],
+		["ldr:AO", "esp:34", "purple", []],
+		["esp:32", "pumpIndicatorR:1", "blue", []],
+		["pumpIndicatorR:2", "pumpIndicator:A", "blue", []],
+		["pumpIndicator:C", "esp:GND.1", "black", []],
+		["esp:33", "outdoorIndicatorR:1", "yellow", []],
+		["outdoorIndicatorR:2", "outdoorIndicator:A", "yellow", []],
+		["outdoorIndicator:C", "esp:GND.1", "black", []],
+		["esp:5V", "relay:VCC", "red", []],
+		["esp:GND.1", "relay:GND", "black", []],
+		["esp:23", "relay:IN", "green", []],
+		["esp:5V", "relay:COM", "red", []],
+		["relay:NO", "lampR:1", "yellow", []],
+		["lampR:2", "lamp:A", "yellow", []],
+		["lamp:C", "esp:GND.1", "black", []],
+		["esp:33", "ledExt1:A", "white", []],
+		["ledExt1:C", "rExt1:1", "black", []],
+		["rExt1:2", "esp:GND.1", "black", []],
+		["esp:33", "ledExt2:A", "white", []],
+		["ledExt2:C", "rExt2:1", "black", []],
+		["rExt2:2", "esp:GND.1", "black", []],
+		["esp:33", "ledExt3:A", "white", []],
+		["ledExt3:C", "rExt3:1", "black", []],
+		["rExt3:2", "esp:GND.1", "black", []],
+		["esp:33", "ledExt4:A", "white", []],
+		["ledExt4:C", "rExt4:1", "black", []],
+		["rExt4:2", "esp:GND.1", "black", []],
+		["esp:33", "ledExt5:A", "white", []],
+		["ledExt5:C", "rExt5:1", "black", []],
+		["rExt5:2", "esp:GND.1", "black", []],
+		["esp:32", "pump:1", "blue", []],
+		["pump:2", "esp:GND.1", "black", []]
+	],
+	"dependencies": {}
+}

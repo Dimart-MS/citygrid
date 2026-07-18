@@ -42,8 +42,12 @@ import com.example.citygrid.ui.components.ElementoEventoLista
 import com.example.citygrid.ui.components.IconoPersonalizado
 import com.example.citygrid.ui.components.TarjetaAdvertenciaConectividad
 import com.example.citygrid.ui.components.bounceClick
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
 import com.example.citygrid.ui.theme.*
-import kotlinx.coroutines.delay
+import com.example.citygrid.utils.formatTimestamp
+import com.example.citygrid.utils.rememberElapsedSeconds
+import com.example.citygrid.utils.Constants
 
 @Composable
 fun ResiduosScreen(
@@ -55,19 +59,8 @@ fun ResiduosScreen(
     val criticalCount by viewModel.criticalContainersCount.collectAsState()
     val eventosRecientes by viewModel.eventosRecientes.collectAsState()
 
-    val scrollState = rememberScrollState()
-
-    var currentTime by remember { mutableStateOf(System.currentTimeMillis()) }
-    LaunchedEffect(state.conectado, state.ultimoMensajeTimestamp) {
-        if (!state.conectado) {
-            while (true) {
-                currentTime = System.currentTimeMillis()
-                delay(1000)
-            }
-        }
-    }
-
-    val segundosInactivo = ((currentTime - state.ultimoMensajeTimestamp) / 1000).coerceAtLeast(0)
+    // Usar utilidad reactiva para calcular segundos inactivo (sin bucle while)
+    val segundosInactivo = rememberElapsedSeconds(state.ultimoMensajeTimestamp)
 
     LaunchedEffect(Unit) {
         viewModel.cargarAlertas()
@@ -82,19 +75,15 @@ fun ResiduosScreen(
             .fillMaxSize()
             .background(BackgroundLight)
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(scrollState)
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(start = 20.dp, top = 8.dp, end = 20.dp, bottom = 110.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                Spacer(modifier = Modifier.height(8.dp))
+            item { Spacer(modifier = Modifier.height(8.dp)) }
 
+            // Título
+            item {
                 AnimatedVisibility(
                     visible = visible,
                     enter = fadeIn(tween(350)) + slideInVertically(tween(350)) { it / 3 }
@@ -107,8 +96,10 @@ fun ResiduosScreen(
                         modifier = Modifier.padding(bottom = 4.dp)
                     )
                 }
+            }
 
-                // Banner estado
+            // Banner estado
+            item {
                 AnimatedVisibility(
                     visible = visible,
                     enter = fadeIn(tween(400, delayMillis = 80)) + slideInVertically(tween(400, delayMillis = 80)) { it / 3 }
@@ -119,9 +110,11 @@ fun ResiduosScreen(
                         contenedores = state.contenedores
                     )
                 }
+            }
 
-                // Alerta de Inactividad
-                if (!state.conectado) {
+            // Alerta de Inactividad
+            if (!state.conectado) {
+                item {
                     AnimatedVisibility(
                         visible = visible,
                         enter = fadeIn(tween(300, delayMillis = 120))
@@ -129,15 +122,20 @@ fun ResiduosScreen(
                         TarjetaAdvertenciaConectividad(segundosInactivo = segundosInactivo)
                     }
                 }
+            }
 
-                // Medidor
+            // Medidor
+            item {
                 AnimatedVisibility(
                     visible = visible,
                     enter = fadeIn(tween(420, delayMillis = 160)) + slideInVertically(tween(420, delayMillis = 160)) { it / 3 }
                 ) {
                     TarjetaMedidor(maxContenedor = maxContenedor)
                 }
+            }
 
+            // Header contenedores
+            item {
                 AnimatedVisibility(
                     visible = visible,
                     enter = fadeIn(tween(300, delayMillis = 240))
@@ -150,19 +148,33 @@ fun ResiduosScreen(
                         modifier = Modifier.padding(vertical = 4.dp)
                     )
                 }
+            }
 
-                // Lista de contenedores con stagger
-                state.contenedores.forEachIndexed { index, contenedor ->
-                    AnimatedVisibility(
-                        visible = visible,
-                        enter = fadeIn(tween(420, delayMillis = 300 + index * 80)) +
-                                slideInVertically(tween(420, delayMillis = 300 + index * 80)) { it / 3 }
-                    ) {
-                        TarjetaContenedor(contenedor = contenedor)
-                    }
+            // Lista de contenedores con stagger limitado a primeros 5 elementos
+            itemsIndexed(state.contenedores.take(5)) { index, contenedor ->
+                AnimatedVisibility(
+                    visible = visible,
+                    enter = fadeIn(tween(420, delayMillis = 300 + index * 80)) +
+                            slideInVertically(tween(420, delayMillis = 300 + index * 80)) { it / 3 }
+                ) {
+                    TarjetaContenedor(contenedor = contenedor)
                 }
+            }
 
-                // Eventos recientes
+            // Si hay más de 5 contenedores, mostrar indicador
+            if (state.contenedores.size > 5) {
+                item {
+                    Text(
+                        text = "+ ${state.contenedores.size - 5} contenedores más",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = TextSecondary,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                }
+            }
+
+            // Eventos recientes
+            item {
                 AnimatedVisibility(
                     visible = visible,
                     enter = fadeIn(tween(420, delayMillis = 480)) + slideInVertically(tween(420, delayMillis = 480)) { it / 3 }
@@ -172,13 +184,15 @@ fun ResiduosScreen(
                         onVerAlertas = onNavigateToAlerts
                     )
                 }
+            }
 
-                Spacer(modifier = Modifier.height(8.dp))
-
+            // Footer con timestamp
+            item {
                 val timeString = remember(state.contenedores) {
-                    val maxTimestamp = state.contenedores.maxOfOrNull { it.ultimaActualizacion } ?: System.currentTimeMillis()
-                    val sdf = java.text.SimpleDateFormat("dd/MM/yyyy · hh:mm a", java.util.Locale.getDefault())
-                    sdf.format(java.util.Date(maxTimestamp))
+                    formatTimestamp(
+                        state.contenedores.maxOfOrNull { it.ultimaActualizacion } ?: System.currentTimeMillis(),
+                        "dd/MM/yyyy · hh:mm a"
+                    )
                 }
                 Text(
                     text = "Última actualización: $timeString",
@@ -187,7 +201,6 @@ fun ResiduosScreen(
                     modifier = Modifier.fillMaxWidth(),
                     textAlign = TextAlign.Center
                 )
-                Spacer(modifier = Modifier.height(110.dp))
             }
         }
     }
@@ -218,17 +231,13 @@ fun BannerEstadoResiduos(criticalCount: Int, conectado: Boolean, contenedores: L
     ) {
         Column {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                val dateString = remember {
-                    val sdf = java.text.SimpleDateFormat("dd/MM/yyyy - HH:mm 'hrs'", java.util.Locale.getDefault())
-                    sdf.format(java.util.Date())
-                }
                 Text(
-                    text = dateString,
+                    text = formatTimestamp(System.currentTimeMillis()),
                     style = MaterialTheme.typography.labelMedium,
                     color = Color.White.copy(alpha = 0.65f)
                 )
                 Spacer(modifier = Modifier.weight(1f))
-                
+
                 Box(
                     modifier = Modifier
                         .background(badgeColor.copy(alpha = 0.15f), RoundedCornerShape(14.dp))
@@ -269,8 +278,8 @@ fun TarjetaMedidor(maxContenedor: ContenedorData?) {
 
     val status = if (activo) {
         when {
-            porcentaje > 85 -> "Lleno — Requiere vaciado"
-            porcentaje >= 50 -> "Medio — Nivel estable"
+            porcentaje > Constants.UMBRAL_RESIDUOS_CRITICO -> "Lleno — Requiere vaciado"
+            porcentaje >= Constants.UMBRAL_RESIDUOS_MEDIO -> "Medio — Nivel estable"
             else -> "Vacío — Nivel óptimo"
         }
     } else {
@@ -280,8 +289,8 @@ fun TarjetaMedidor(maxContenedor: ContenedorData?) {
     val (_, _, progressColor) = obtenerColoresContenedor(
         if (activo) {
             when {
-                porcentaje > 85 -> "Lleno"
-                porcentaje >= 50 -> "Medio"
+                porcentaje > Constants.UMBRAL_RESIDUOS_CRITICO -> "Lleno"
+                porcentaje >= Constants.UMBRAL_RESIDUOS_MEDIO -> "Medio"
                 else -> "Vacío"
             }
         } else {
@@ -422,8 +431,8 @@ fun DibujoMedidorSegmentado(porcentaje: Float, colorActivo: Color) {
 fun TarjetaContenedor(contenedor: ContenedorData) {
     val status = if (contenedor.activo) {
         when {
-            contenedor.porcentaje > 85 -> "Lleno"
-            contenedor.porcentaje >= 50 -> "Medio"
+            contenedor.porcentaje > Constants.UMBRAL_RESIDUOS_CRITICO -> "Lleno"
+            contenedor.porcentaje >= Constants.UMBRAL_RESIDUOS_MEDIO -> "Medio"
             else -> "Vacío"
         }
     } else {
@@ -507,7 +516,7 @@ fun TarjetaContenedor(contenedor: ContenedorData) {
                 )
                 Text(
                     text = "Libre: ${100 - contenedor.porcentaje}%",
-                    color = if (contenedor.porcentaje > 85) StatusRed else TextSecondary,
+                    color = if (contenedor.porcentaje > Constants.UMBRAL_RESIDUOS_CRITICO) StatusRed else TextSecondary,
                     style = MaterialTheme.typography.bodySmall
                 )
             }
@@ -515,12 +524,8 @@ fun TarjetaContenedor(contenedor: ContenedorData) {
             BarraProgresoPersonalizada(progress = contenedor.porcentaje / 100f, color = progressColor)
             Spacer(modifier = Modifier.height(10.dp))
 
-            val updateTime = remember(contenedor.ultimaActualizacion) {
-                val sdf = java.text.SimpleDateFormat("dd/MM/yyyy · hh:mm a", java.util.Locale.getDefault())
-                sdf.format(java.util.Date(contenedor.ultimaActualizacion))
-            }
             Text(
-                text = "Última actualización: $updateTime",
+                text = "Última actualización: ${formatTimestamp(contenedor.ultimaActualizacion, "dd/MM/yyyy · hh:mm a")}",
                 style = MaterialTheme.typography.labelSmall,
                 color = TextSecondary
             )
@@ -584,10 +589,7 @@ fun TarjetaEventosRecientesResiduos(
                 }
             } else {
                 eventos.forEachIndexed { index, evento ->
-                    val timeString = remember(evento.timestamp) {
-                        val sdf = java.text.SimpleDateFormat("hh:mm a", java.util.Locale.getDefault())
-                        sdf.format(java.util.Date(evento.timestamp))
-                    }
+                    val timeString = formatTimestamp(evento.timestamp, "hh:mm a")
                     val dotColor = when (evento.tipo) {
                         TipoAlerta.CRITICO     -> StatusRed
                         TipoAlerta.ADVERTENCIA -> AmberAccent

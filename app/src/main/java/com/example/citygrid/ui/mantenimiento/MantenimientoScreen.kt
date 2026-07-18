@@ -30,7 +30,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.citygrid.data.SessionManager
 import com.example.citygrid.model.db.DbMantenimiento
-import com.example.citygrid.ui.components.CityGridTopBar
+import com.example.citygrid.ui.components.EmptyState
 import com.example.citygrid.ui.components.ShimmerPlaceholder
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
@@ -62,7 +62,7 @@ fun MantenimientoScreen() {
     val context = LocalContext.current
     val sessionManager = remember { SessionManager(context) }
     val viewModel: MantenimientoViewModel = viewModel { MantenimientoViewModel(sessionManager) }
-    
+
     val mantenimientos by viewModel.mantenimientos.collectAsState()
     val usuariosMap by viewModel.usuariosMap.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
@@ -203,7 +203,11 @@ fun MantenimientoScreen() {
                     }
                 }
             } else if (mantenimientos.isEmpty()) {
-                Text("No hay mantenimientos registrados.", color = TextSecondary)
+                EmptyState(
+                    icon = Icons.Default.Build,
+                    titulo = "Sin mantenimientos",
+                    subtitulo = "Toca el botón + para registrar el primer mantenimiento del sistema"
+                )
             } else {
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(12.dp),

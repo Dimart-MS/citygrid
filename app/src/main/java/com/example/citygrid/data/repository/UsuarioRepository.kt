@@ -1,6 +1,6 @@
 package com.example.citygrid.data.repository
 
-import android.util.Log
+import com.example.citygrid.utils.Logger
 import com.example.citygrid.data.SupabaseManager
 import com.example.citygrid.model.db.DbRol
 import com.example.citygrid.model.db.DbUsuario
@@ -42,7 +42,7 @@ object UsuarioRepository {
                 .decodeList<DbUsuario>()
 
             if (usuarios.isEmpty()) {
-                Log.w(TAG, "No se encontró usuario con correo=$correo")
+                Logger.w(TAG, "No se encontró usuario con correo=$correo")
                 return Result.failure(IllegalArgumentException("Credenciales incorrectas"))
             }
 
@@ -53,7 +53,7 @@ object UsuarioRepository {
             // primera vez; el login NUNCA compara passwords en texto plano.
             val passwordHash = usuario.passwordHash
             if (!passwordHash.startsWith("\$2")) {
-                Log.w(TAG, "Login rechazado: hash con formato no soportado para correo=$correo")
+                Logger.w(TAG, "Login rechazado: hash con formato no soportado para correo=$correo")
                 return Result.failure(
                     IllegalStateException("Contraseña con formato inválido. Contacta al administrador.")
                 )
@@ -61,20 +61,20 @@ object UsuarioRepository {
             val isMatch = BCrypt.checkpw(password, passwordHash)
 
             if (!isMatch) {
-                Log.w(TAG, "Contraseña incorrecta para correo=$correo")
+                Logger.w(TAG, "Contraseña incorrecta para correo=$correo")
                 return Result.failure(IllegalArgumentException("Credenciales incorrectas"))
             }
 
             if (!usuario.estado) {
-                Log.w(TAG, "Usuario $correo está desactivado")
+                Logger.w(TAG, "Usuario $correo está desactivado")
                 return Result.failure(IllegalStateException("Tu cuenta está desactivada. Contacta al administrador."))
             }
 
-            Log.d(TAG, "Login exitoso: ${usuario.nombre} (${usuario.correo})")
+            Logger.d(TAG, "Login exitoso: ${usuario.nombre} (${usuario.correo})")
             Result.success(usuario)
 
         } catch (e: Exception) {
-            Log.e(TAG, "Error de conexión a Supabase en login", e)
+            Logger.e(TAG, "Error de conexión a Supabase en login", e)
             Result.failure(Exception("Error de conexión. Verifica tu internet."))
         }
     }
@@ -100,7 +100,7 @@ object UsuarioRepository {
 
                 // Migración automática: si el password NO es bcrypt, actualizarlo
                 if (!existing.passwordHash.startsWith("\$2")) {
-                    Log.w(TAG, "Seed: admin existe con password en texto plano. Migrando a bcrypt...")
+                    Logger.w(TAG, "Seed: admin existe con password en texto plano. Migrando a bcrypt...")
                     SupabaseManager.client
                         .from("usuarios")
                         .update(
@@ -110,9 +110,9 @@ object UsuarioRepository {
                         ) {
                             filter { eq("correo", ADMIN_CORREO) }
                         }
-                    Log.d(TAG, "Seed: password de admin migrado a bcrypt.")
+                    Logger.d(TAG, "Seed: password de admin migrado a bcrypt.")
                 } else {
-                    Log.d(TAG, "Seed: admin ya existe con bcrypt, no se modifica.")
+                    Logger.d(TAG, "Seed: admin ya existe con bcrypt, no se modifica.")
                 }
                 return true
             }
@@ -132,7 +132,7 @@ object UsuarioRepository {
                             descripcion = "Administrador del sistema"
                         )
                     )
-                Log.d(TAG, "Seed: rol 'admin' creado.")
+                Logger.d(TAG, "Seed: rol 'admin' creado.")
             }
 
             // 3. Crear el usuario admin con password hasheado con bcrypt
@@ -150,10 +150,10 @@ object UsuarioRepository {
                     )
                 )
 
-            Log.d(TAG, "Seed: usuario admin creado con contraseña hasheada (bcrypt).")
+            Logger.d(TAG, "Seed: usuario admin creado con contraseña hasheada (bcrypt).")
             true
         } catch (e: Exception) {
-            Log.e(TAG, "Error al hacer seed del admin", e)
+            Logger.e(TAG, "Error al hacer seed del admin", e)
             false
         }
     }
