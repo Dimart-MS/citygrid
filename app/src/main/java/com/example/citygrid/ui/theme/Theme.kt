@@ -5,8 +5,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
 
-// ─── Esquema Claro CityGrid v2 ────────────────────────────────────────────────
+// ─── Esquema Claro CityGrid v3 ────────────────────────────────────────────────
 private val LightColorScheme = lightColorScheme(
     primary                = CityGridPrimary,
     onPrimary              = SurfaceCard,
@@ -22,19 +23,19 @@ private val LightColorScheme = lightColorScheme(
     onTertiaryContainer    = AmberDark,
     error                  = StatusRed,
     onError                = SurfaceCard,
-    errorContainer         = StatusRed.copy(alpha = 0.12f),
+    errorContainer         = ErrorLight,
     onErrorContainer       = StatusRed,
     background             = BackgroundLight,
     onBackground           = TextPrimary,
     surface                = SurfaceCard,
     onSurface              = TextPrimary,
-    surfaceVariant         = DividerColor,
+    surfaceVariant         = SurfaceElevated,
     onSurfaceVariant       = TextSecondary,
-    surfaceContainer       = SurfaceContainer,
-    surfaceContainerLow    = SurfaceElevated,
+    surfaceContainerLow    = SurfaceContainer,
+    surfaceContainer       = SurfaceElevated,
     surfaceContainerHigh   = DividerColor,
     outline                = DividerColor,
-    outlineVariant         = CityGridPrimaryLight,
+    outlineVariant         = Color(0xFFE2E8F0),   // Slate-200
     inverseSurface         = CityGridPrimaryDark,
     inverseOnSurface       = SurfaceCard,
     inversePrimary         = CityGridPrimaryLight,
@@ -53,12 +54,16 @@ private val DarkColorScheme = darkColorScheme(
     error                  = StatusRed,
     onError                = SurfaceCard,
     background             = BackgroundDark,
-    onBackground           = SurfaceCard,
+    onBackground           = TextPrimaryDark,
     surface                = SurfaceDark,
-    onSurface              = SurfaceCard,
+    onSurface              = TextPrimaryDark,
     surfaceVariant         = SurfaceVariantDark,
-    onSurfaceVariant       = DividerColor,
-    outline                = TextSecondary,
+    onSurfaceVariant       = TextSecondaryDark,
+    outline                = BorderDark,
+    outlineVariant         = DividerDark,
+    inverseSurface         = SurfaceCard,
+    inverseOnSurface       = TextPrimary,
+    inversePrimary         = CityGridPrimaryDark,
 )
 
 @Composable

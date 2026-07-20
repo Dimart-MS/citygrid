@@ -40,11 +40,14 @@ import com.example.citygrid.ui.theme.StatusRed
 import com.example.citygrid.ui.theme.AmberAccent
 import com.example.citygrid.ui.theme.AmberLight
 import com.example.citygrid.ui.theme.AmberDark
-import com.example.citygrid.ui.theme.BackgroundLight
 import com.example.citygrid.ui.theme.SurfaceCard
-import com.example.citygrid.ui.theme.SurfaceElevated
 import com.example.citygrid.ui.theme.DividerColor
 import com.example.citygrid.ui.theme.TextSecondary
+import com.example.citygrid.ui.theme.brandGradient
+import com.example.citygrid.ui.theme.BorderWidth
+import com.example.citygrid.ui.theme.Radius
+import com.example.citygrid.ui.theme.Spacing
+import com.example.citygrid.ui.theme.Elevation
 import com.example.citygrid.utils.formatTimestamp
 import com.example.citygrid.utils.rememberElapsedSeconds
 import com.example.citygrid.utils.Constants
@@ -68,7 +71,7 @@ fun AlumbradoScreen(viewModel: AlumbradoViewModel = viewModel()) {
     LaunchedEffect(Unit) { visible = true }
 
     Scaffold(
-        containerColor = BackgroundLight,
+        containerColor = MaterialTheme.colorScheme.background,
         contentWindowInsets = WindowInsets(0.dp)
     ) { paddingValues ->
         Column(
@@ -103,13 +106,10 @@ fun AlumbradoScreen(viewModel: AlumbradoViewModel = viewModel()) {
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(
-                            Brush.linearGradient(
-                                colors = listOf(CityGridPrimaryDark, Color(0xFF0A3D62), Color(0xFF0D5A8C))
-                            ),
-                            RoundedCornerShape(24.dp)
+                            Brush.linearGradient(colors = brandGradient()),
+                            RoundedCornerShape(Radius.lg)
                         )
-                        .border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(24.dp))
-                        .padding(20.dp)
+                        .padding(Spacing.xl)
                 ) {
                     Column {
                         Row(
@@ -173,15 +173,15 @@ fun AlumbradoScreen(viewModel: AlumbradoViewModel = viewModel()) {
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .border(1.dp, DividerColor, RoundedCornerShape(24.dp)),
-                    shape = RoundedCornerShape(24.dp),
-                    colors = CardDefaults.cardColors(containerColor = SurfaceElevated),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                        .border(BorderWidth.thin, DividerColor, RoundedCornerShape(Radius.lg)),
+                    shape = RoundedCornerShape(Radius.lg),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    elevation = CardDefaults.cardElevation(defaultElevation = Elevation.sm)
                 ) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(20.dp),
+                            .padding(Spacing.xl),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
@@ -225,8 +225,7 @@ fun AlumbradoScreen(viewModel: AlumbradoViewModel = viewModel()) {
                                     checkedThumbColor = Color.White,
                                     checkedTrackColor = CityGridPrimary,
                                     uncheckedThumbColor = Color.White,
-                                    uncheckedTrackColor = DividerColor,
-                                    uncheckedBorderColor = Color.Transparent
+                                    uncheckedTrackColor = DividerColor
                                 ),
                                 modifier = Modifier.scale(0.85f)
                             )
@@ -249,13 +248,13 @@ fun AlumbradoScreen(viewModel: AlumbradoViewModel = viewModel()) {
                         modifier = Modifier
                             .weight(1f)
                             .border(
-                                width = 1.dp,
+                                width = BorderWidth.thin,
                                 color = if (state.estadoOn) AmberAccent.copy(alpha = 0.3f) else DividerColor,
-                                shape = RoundedCornerShape(24.dp)
+                                shape = RoundedCornerShape(Radius.lg)
                             ),
-                        shape = RoundedCornerShape(24.dp),
-                        colors = CardDefaults.cardColors(containerColor = SurfaceElevated),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                        shape = RoundedCornerShape(Radius.lg),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                        elevation = CardDefaults.cardElevation(defaultElevation = Elevation.sm)
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
                             Row(
@@ -287,8 +286,7 @@ fun AlumbradoScreen(viewModel: AlumbradoViewModel = viewModel()) {
                                         checkedThumbColor = Color.White,
                                         checkedTrackColor = CityGridPrimary,
                                         uncheckedThumbColor = Color.White,
-                                        uncheckedTrackColor = DividerColor,
-                                        uncheckedBorderColor = Color.Transparent
+                                        uncheckedTrackColor = DividerColor
                                     ),
                                     modifier = Modifier.scale(0.85f)
                                 )
@@ -319,17 +317,17 @@ fun AlumbradoScreen(viewModel: AlumbradoViewModel = viewModel()) {
                         modifier = Modifier
                             .weight(1f)
                             .border(
-                                width = 1.dp,
+                                width = BorderWidth.thin,
                                 color = if (state.condicionNoche) CityGridPrimary.copy(alpha = 0.3f)
                                         else AmberAccent.copy(alpha = 0.3f),
-                                shape = RoundedCornerShape(24.dp)
+                                shape = RoundedCornerShape(Radius.lg)
                             ),
-                        shape = RoundedCornerShape(24.dp),
+                        shape = RoundedCornerShape(Radius.lg),
                         colors = CardDefaults.cardColors(
-                            containerColor = if (state.condicionNoche) CityGridPrimaryDark.copy(alpha = 0.08f)
-                                             else AmberLight.copy(alpha = 0.3f)
+                            containerColor = if (state.condicionNoche) CityGridPrimaryDark.copy(alpha = 0.06f)
+                                             else AmberLight.copy(alpha = 0.25f)
                         ),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                        elevation = CardDefaults.cardElevation(defaultElevation = Elevation.sm)
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
                             Box(
@@ -381,12 +379,12 @@ fun AlumbradoScreen(viewModel: AlumbradoViewModel = viewModel()) {
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .border(1.dp, DividerColor, RoundedCornerShape(24.dp)),
-                    shape = RoundedCornerShape(24.dp),
-                    colors = CardDefaults.cardColors(containerColor = SurfaceElevated),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                        .border(BorderWidth.thin, DividerColor, RoundedCornerShape(Radius.lg)),
+                    shape = RoundedCornerShape(Radius.lg),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    elevation = CardDefaults.cardElevation(defaultElevation = Elevation.sm)
                 ) {
-                    Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                    Column(modifier = Modifier.padding(Spacing.xl), verticalArrangement = Arrangement.spacedBy(14.dp)) {
                         Text(
                             "DETALLES DEL SISTEMA",
                             style = MaterialTheme.typography.labelSmall,
@@ -486,7 +484,7 @@ fun TarjetaEventoMiniAlumbrado(lectura: DbLecturaLuminaria) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = SurfaceElevated),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Row(

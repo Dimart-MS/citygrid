@@ -73,7 +73,7 @@ fun ResiduosScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(BackgroundLight)
+            .background(MaterialTheme.colorScheme.background)
     ) {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
@@ -221,12 +221,9 @@ fun BannerEstadoResiduos(criticalCount: Int, conectado: Boolean, contenedores: L
         modifier = Modifier
             .fillMaxWidth()
             .background(
-                Brush.linearGradient(
-                    colors = listOf(CityGridPrimaryDark, Color(0xFF0A3D62), Color(0xFF0D5A8C))
-                ),
-                RoundedCornerShape(24.dp)
+                Brush.linearGradient(colors = brandGradient()),
+                RoundedCornerShape(Radius.lg)
             )
-            .border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(24.dp))
             .padding(20.dp)
     ) {
         Column {
@@ -240,8 +237,8 @@ fun BannerEstadoResiduos(criticalCount: Int, conectado: Boolean, contenedores: L
 
                 Box(
                     modifier = Modifier
-                        .background(badgeColor.copy(alpha = 0.15f), RoundedCornerShape(14.dp))
-                        .border(1.dp, badgeColor.copy(alpha = 0.4f), RoundedCornerShape(14.dp))
+                        .background(badgeColor.copy(alpha = 0.15f), RoundedCornerShape(Radius.md))
+                        .border(BorderWidth.thin, badgeColor.copy(alpha = 0.4f), RoundedCornerShape(Radius.md))
                         .padding(horizontal = 12.dp, vertical = 5.dp)
                 ) {
                     Text(
@@ -307,13 +304,13 @@ fun TarjetaMedidor(maxContenedor: ContenedorData?) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .border(1.dp, DividerColor, RoundedCornerShape(24.dp)),
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = SurfaceElevated),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            .border(BorderWidth.thin, DividerColor, RoundedCornerShape(Radius.lg)),
+        shape = RoundedCornerShape(Radius.lg),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = Elevation.sm)
     ) {
         Column(
-            modifier = Modifier.padding(20.dp),
+            modifier = Modifier.padding(Spacing.xl),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
@@ -457,10 +454,10 @@ fun TarjetaContenedor(contenedor: ContenedorData) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .border(1.dp, DividerColor, RoundedCornerShape(24.dp)),
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = SurfaceElevated),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            .border(BorderWidth.thin, DividerColor, RoundedCornerShape(Radius.lg)),
+        shape = RoundedCornerShape(Radius.lg),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = Elevation.sm)
     ) {
         // Header de color semántico
         Box(
@@ -470,7 +467,7 @@ fun TarjetaContenedor(contenedor: ContenedorData) {
                     Brush.horizontalGradient(
                         colors = listOf(progressColor.copy(alpha = 0.12f), Color.Transparent)
                     ),
-                    RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
+                    RoundedCornerShape(topStart = Radius.lg, topEnd = Radius.lg)
                 )
                 .padding(horizontal = 16.dp, vertical = 14.dp)
         ) {
@@ -550,10 +547,10 @@ fun TarjetaEventosRecientesResiduos(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .border(1.dp, DividerColor, RoundedCornerShape(24.dp)),
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = SurfaceElevated),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            .border(BorderWidth.thin, DividerColor, RoundedCornerShape(Radius.lg)),
+        shape = RoundedCornerShape(Radius.lg),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = Elevation.sm)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {

@@ -13,6 +13,8 @@ import androidx.compose.material.icons.filled.WbSunny
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -25,13 +27,18 @@ import com.example.citygrid.model.Alerta
 import com.example.citygrid.model.TipoAlerta
 import com.example.citygrid.ui.theme.AmberAccent
 import com.example.citygrid.ui.theme.CityGridPrimary
-import com.example.citygrid.ui.theme.SurfaceElevated
 import com.example.citygrid.ui.theme.StatusBlue
 import com.example.citygrid.ui.theme.StatusGreen
 import com.example.citygrid.ui.theme.StatusRed
-import com.example.citygrid.ui.theme.StatusYellow
 import com.example.citygrid.ui.theme.TextPrimary
 import com.example.citygrid.ui.theme.TextSecondary
+import com.example.citygrid.ui.theme.TextTertiary
+import com.example.citygrid.ui.theme.BorderWidth
+import com.example.citygrid.ui.theme.Radius
+import com.example.citygrid.ui.theme.Spacing
+import com.example.citygrid.ui.theme.IconSize
+import com.example.citygrid.ui.theme.AvatarSize
+import com.example.citygrid.ui.theme.Elevation
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -67,30 +74,23 @@ fun AlertItemCard(
     } else ""
 
     Card(
-        modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = SurfaceElevated),
-        shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        modifier = modifier
+            .fillMaxWidth()
+            .interactiveSurface(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        shape = RoundedCornerShape(Radius.md),
+        elevation = CardDefaults.cardElevation(defaultElevation = Elevation.sm)
     ) {
         Row(
-            modifier = Modifier.height(IntrinsicSize.Min),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(Spacing.lg),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Borde izquierdo de severidad (5dp)
+            // Ícono de sistema en círculo
             Box(
                 modifier = Modifier
-                    .fillMaxHeight()
-                    .width(5.dp)
-                    .background(
-                        severityColor,
-                        RoundedCornerShape(topStart = 16.dp, bottomStart = 16.dp)
-                    )
-            )
-            Spacer(Modifier.width(14.dp))
-            // Ícono de sistema
-            Box(
-                modifier = Modifier
-                    .size(42.dp)
+                    .size(AvatarSize.lg)
                     .background(iconBg, CircleShape),
                 contentAlignment = Alignment.Center
             ) {
@@ -98,15 +98,13 @@ fun AlertItemCard(
                     imageVector = icono,
                     contentDescription = null,
                     tint = iconTint,
-                    modifier = Modifier.size(22.dp)
+                    modifier = Modifier.size(IconSize.lg)
                 )
             }
-            Spacer(Modifier.width(12.dp))
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(vertical = 14.dp)
-            ) {
+
+            Spacer(modifier = Modifier.width(Spacing.md))
+
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = alerta.titulo.ifBlank { "Alerta" },
                     color = TextPrimary,
@@ -114,26 +112,24 @@ fun AlertItemCard(
                     fontWeight = FontWeight.SemiBold,
                     maxLines = 1
                 )
-                Spacer(Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(Spacing.xs))
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier
-                            .background(
-                                severityColor.copy(alpha = 0.12f),
-                                RoundedCornerShape(8.dp)
-                            )
-                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                    // Badge de severidad
+                    Surface(
+                        shape = RoundedCornerShape(Radius.sm),
+                        color = severityColor.copy(alpha = 0.10f)
                     ) {
                         Text(
                             text = severityLabel,
                             color = severityColor,
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Bold,
-                            letterSpacing = 0.4.sp
+                            letterSpacing = 0.4.sp,
+                            modifier = Modifier.padding(horizontal = Spacing.sm, vertical = 2.dp)
                         )
                     }
                     if (hora.isNotBlank()) {
-                        Spacer(Modifier.width(8.dp))
+                        Spacer(modifier = Modifier.width(Spacing.sm))
                         Text(
                             text = hora,
                             color = TextSecondary,
@@ -142,15 +138,13 @@ fun AlertItemCard(
                     }
                 }
             }
+
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                 contentDescription = null,
-                tint = TextSecondary.copy(alpha = 0.5f),
-                modifier = Modifier
-                    .size(20.dp)
-                    .padding(end = 2.dp)
+                tint = TextTertiary,
+                modifier = Modifier.size(IconSize.lg)
             )
-            Spacer(Modifier.width(12.dp))
         }
     }
 }

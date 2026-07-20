@@ -41,6 +41,7 @@ import com.example.citygrid.ui.components.AlertItemCard
 import com.example.citygrid.ui.components.SemiCircleChart
 import com.example.citygrid.ui.components.StatusBadge
 import com.example.citygrid.ui.components.bounceClick
+import com.example.citygrid.ui.components.interactiveSurface
 import com.example.citygrid.ui.theme.*
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -117,16 +118,16 @@ fun DashboardScreen(
     Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(top = 16.dp, bottom = 110.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+            contentPadding = PaddingValues(top = Spacing.lg, bottom = 110.dp),
+            verticalArrangement = Arrangement.spacedBy(Spacing.md)
         ) {
             // ── Saludo ──────────────────────────────────────────────────
             item {
                 AnimatedVisibility(
                     visible = visible,
-                    enter = fadeIn(tween(350)) + slideInVertically(tween(350)) { it / 3 }
+                    enter = fadeIn(tween(Motion.durationSlow)) + slideInVertically(tween(Motion.durationSlow)) { it / 3 }
                 ) {
-                    Column(modifier = Modifier.padding(horizontal = 20.dp)) {
+                    Column(modifier = Modifier.padding(horizontal = Spacing.xl)) {
                         Text(
                             text = "Bienvenido",
                             style = MaterialTheme.typography.bodySmall,
@@ -151,88 +152,83 @@ fun DashboardScreen(
             item {
                 AnimatedVisibility(
                     visible = visible,
-                    enter = fadeIn(tween(400, delayMillis = 80)) + slideInVertically(tween(400, delayMillis = 80)) { it / 3 }
+                    enter = fadeIn(tween(Motion.durationNormal, delayMillis = 80)) + slideInVertically(tween(Motion.durationNormal, delayMillis = 80)) { it / 3 }
                 ) {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 20.dp)
-                            .shadow(
-                                elevation = 12.dp,
-                                shape = RoundedCornerShape(24.dp),
-                                ambientColor = CityGridPrimaryDark.copy(alpha = 0.3f),
-                                spotColor = CityGridPrimaryDark.copy(alpha = 0.4f)
-                            )
+                            .padding(horizontal = Spacing.xl)
                             .background(
-                                Brush.linearGradient(
-                                    colors = listOf(CityGridPrimaryDark, Color(0xFF0A3D62), Color(0xFF0D5A8C))
-                                ),
-                                RoundedCornerShape(24.dp)
+                                Brush.linearGradient(colors = brandGradient()),
+                                RoundedCornerShape(Radius.lg)
                             )
-                            .border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(24.dp))
-                            .padding(20.dp)
+                            .padding(Spacing.xl)
                     ) {
                         Column {
                             Text(
-                                text = "Estado General del Sistema",
-                                style = MaterialTheme.typography.labelMedium,
-                                color = Color(0xFFCBD5E0),
-                                letterSpacing = 0.5.sp
+                                text = "ESTADO GENERAL",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Color.White.copy(alpha = 0.55f),
+                                letterSpacing = 0.8.sp
                             )
+                            Spacer(Modifier.height(Spacing.xs))
                             Text(
                                 text = fechaActual,
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White
                             )
-                            Spacer(Modifier.height(12.dp))
-                            // Indicador conectividad
-                            Box(
-                                modifier = Modifier
-                                    .background(Color.White.copy(alpha = 0.12f), RoundedCornerShape(14.dp))
-                                    .padding(horizontal = 12.dp, vertical = 6.dp)
+                            Spacer(Modifier.height(Spacing.lg))
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(Spacing.md)
                             ) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(8.dp)
-                                            .background(
-                                                if (esp32Conectado) StatusGreen else StatusRed,
-                                                CircleShape
-                                            )
-                                    )
-                                    Spacer(Modifier.width(8.dp))
-                                    Text(
-                                        text = if (esp32Conectado)
-                                            "ESP32 conectado"
-                                        else
-                                            "Sin señal — ESP32 desconectado",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = if (esp32Conectado) StatusGreen else StatusRed,
-                                        fontWeight = FontWeight.SemiBold
-                                    )
-                                }
-                            }
-                            if (esp32Conectado && alertasActivas > 0) {
-                                Spacer(Modifier.height(6.dp))
-                                Box(
-                                    modifier = Modifier
-                                        .background(AmberAccent.copy(alpha = 0.15f), RoundedCornerShape(14.dp))
-                                        .padding(horizontal = 12.dp, vertical = 6.dp)
+                                // Indicador conectividad
+                                Surface(
+                                    shape = RoundedCornerShape(Radius.sm),
+                                    color = Color.White.copy(alpha = 0.12f)
                                 ) {
-                                    Text(
-                                        text = "$alertasActivas alerta${if (alertasActivas > 1) "s" else ""} pendiente${if (alertasActivas > 1) "s" else ""}",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = AmberAccent,
-                                        fontWeight = FontWeight.SemiBold
-                                    )
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = Spacing.md, vertical = 5.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(7.dp)
+                                                .background(
+                                                    if (esp32Conectado) StatusGreen else StatusRed,
+                                                    CircleShape
+                                                )
+                                        )
+                                        Spacer(Modifier.width(Spacing.sm))
+                                        Text(
+                                            text = if (esp32Conectado) "Conectado" else "Desconectado",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = if (esp32Conectado) StatusGreen else StatusRed,
+                                            fontWeight = FontWeight.SemiBold
+                                        )
+                                    }
+                                }
+                                if (alertasActivas > 0) {
+                                    Surface(
+                                        shape = RoundedCornerShape(Radius.sm),
+                                        color = AmberAccent.copy(alpha = 0.18f)
+                                    ) {
+                                        Text(
+                                            text = "$alertasActivas alerta${if (alertasActivas > 1) "s" else ""}",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = AmberAccent,
+                                            fontWeight = FontWeight.SemiBold,
+                                            modifier = Modifier.padding(horizontal = Spacing.md, vertical = 5.dp)
+                                        )
+                                    }
                                 }
                             }
-                            Spacer(Modifier.height(8.dp))
+                            Spacer(Modifier.height(Spacing.sm))
                             Text(
                                 text = tiempoTexto,
                                 style = MaterialTheme.typography.labelSmall,
-                                color = Color.White.copy(alpha = 0.55f)
+                                color = Color.White.copy(alpha = 0.5f)
                             )
                         }
                     }
@@ -243,12 +239,12 @@ fun DashboardScreen(
             item {
                 AnimatedVisibility(
                     visible = visible,
-                    enter = fadeIn(tween(400, delayMillis = 160)) + slideInVertically(tween(400, delayMillis = 160)) { it / 3 }
+                    enter = fadeIn(tween(Motion.durationNormal, delayMillis = 160)) + slideInVertically(tween(Motion.durationNormal, delayMillis = 160)) { it / 3 }
                 ) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 20.dp),
+                            .padding(horizontal = Spacing.xl),
                         horizontalArrangement = Arrangement.SpaceEvenly
                     ) {
                         AccesoRapidoItem(
@@ -287,20 +283,21 @@ fun DashboardScreen(
             item {
                 AnimatedVisibility(
                     visible = visible,
-                    enter = fadeIn(tween(420, delayMillis = 240)) + slideInVertically(tween(420, delayMillis = 240)) { it / 3 }
+                    enter = fadeIn(tween(Motion.durationDisplay, delayMillis = 240)) + slideInVertically(tween(Motion.durationDisplay, delayMillis = 240)) { it / 3 }
                 ) {
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 20.dp)
-                            .border(1.dp, DividerColor, RoundedCornerShape(24.dp))
+                            .padding(horizontal = Spacing.xl)
+                            .border(BorderWidth.thin, DividerColor, RoundedCornerShape(Radius.lg))
+                            .interactiveSurface()
                             .clickable { navController.navigate(Screen.Residuos.route) },
-                        shape = RoundedCornerShape(24.dp),
-                        colors = CardDefaults.cardColors(containerColor = SurfaceElevated),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                        shape = RoundedCornerShape(Radius.lg),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                        elevation = CardDefaults.cardElevation(defaultElevation = Elevation.sm)
                     ) {
                         Column(
-                            modifier = Modifier.padding(20.dp),
+                            modifier = Modifier.padding(Spacing.xl),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Text(
@@ -310,13 +307,13 @@ fun DashboardScreen(
                                 color = MaterialTheme.colorScheme.onSurface,
                                 modifier = Modifier.fillMaxWidth()
                             )
-                            Spacer(Modifier.height(12.dp))
+                            Spacer(Modifier.height(Spacing.md))
                             SemiCircleChart(
                                 porcentaje = residuoPorcentaje,
                                 label = residuoNombre,
                                 color = CityGridPrimary
                             )
-                            Spacer(Modifier.height(10.dp))
+                            Spacer(Modifier.height(Spacing.md))
                             val estadoResiduo = when {
                                 residuoPorcentaje > 85 -> "LLENO"
                                 residuoPorcentaje >= 50 -> "MEDIO"
@@ -343,7 +340,7 @@ fun DashboardScreen(
                                 )
                                 Spacer(Modifier.weight(1f))
                                 StatusBadge(estadoResiduo)
-                                Spacer(Modifier.width(8.dp))
+                                Spacer(Modifier.width(Spacing.sm))
                                 Text(
                                     text = textoAccionResiduo,
                                     style = MaterialTheme.typography.bodySmall,
@@ -359,35 +356,36 @@ fun DashboardScreen(
             item {
                 AnimatedVisibility(
                     visible = visible,
-                    enter = fadeIn(tween(420, delayMillis = 320)) + slideInVertically(tween(420, delayMillis = 320)) { it / 3 }
+                    enter = fadeIn(tween(Motion.durationDisplay, delayMillis = 320)) + slideInVertically(tween(Motion.durationDisplay, delayMillis = 320)) { it / 3 }
                 ) {
-                    Column(modifier = Modifier.padding(horizontal = 20.dp)) {
+                    Column(modifier = Modifier.padding(horizontal = Spacing.xl)) {
                         Text(
                             text = "Sistemas monitoreados",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.onBackground
                         )
-                        Spacer(Modifier.height(10.dp))
+                        Spacer(Modifier.height(Spacing.md))
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            horizontalArrangement = Arrangement.spacedBy(Spacing.md)
                         ) {
                             // Tarjeta Agua
                             Card(
                                 modifier = Modifier
                                     .weight(1f)
-                                    .border(1.dp, DividerColor, RoundedCornerShape(24.dp))
+                                    .border(BorderWidth.thin, DividerColor, RoundedCornerShape(Radius.lg))
+                                    .interactiveSurface()
                                     .clickable { navController.navigate(Screen.Agua.route) },
-                                shape = RoundedCornerShape(24.dp),
-                                colors = CardDefaults.cardColors(containerColor = SurfaceElevated),
-                                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                                shape = RoundedCornerShape(Radius.lg),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                                elevation = CardDefaults.cardElevation(defaultElevation = Elevation.sm)
                             ) {
-                                Box(modifier = Modifier.padding(16.dp)) {
+                                Box(modifier = Modifier.padding(Spacing.lg)) {
                                     Column {
                                         Box(
                                             modifier = Modifier
-                                                .size(40.dp)
+                                                .size(AvatarSize.xl)
                                                 .background(CityGridPrimaryLight, CircleShape),
                                             contentAlignment = Alignment.Center
                                         ) {
@@ -395,10 +393,10 @@ fun DashboardScreen(
                                                 Icons.Filled.WaterDrop,
                                                 contentDescription = null,
                                                 tint = CityGridPrimary,
-                                                modifier = Modifier.size(22.dp)
+                                                modifier = Modifier.size(IconSize.xl)
                                             )
                                         }
-                                        Spacer(Modifier.height(10.dp))
+                                        Spacer(Modifier.height(Spacing.md))
                                         Text(
                                             text = "Agua",
                                             style = MaterialTheme.typography.labelMedium,
@@ -416,7 +414,7 @@ fun DashboardScreen(
                                             style = MaterialTheme.typography.labelSmall,
                                             color = TextSecondary
                                         )
-                                        Spacer(Modifier.height(10.dp))
+                                        Spacer(Modifier.height(Spacing.md))
                                         Row(modifier = Modifier.fillMaxWidth()) {
                                             Text(
                                                 text = "Bomba",
@@ -442,17 +440,18 @@ fun DashboardScreen(
                             Card(
                                 modifier = Modifier
                                     .weight(1f)
-                                    .border(1.dp, DividerColor, RoundedCornerShape(24.dp))
+                                    .border(BorderWidth.thin, DividerColor, RoundedCornerShape(Radius.lg))
+                                    .interactiveSurface()
                                     .clickable { navController.navigate(Screen.Alumbrado.route) },
-                                shape = RoundedCornerShape(24.dp),
-                                colors = CardDefaults.cardColors(containerColor = SurfaceElevated),
-                                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                                shape = RoundedCornerShape(Radius.lg),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                                elevation = CardDefaults.cardElevation(defaultElevation = Elevation.sm)
                             ) {
-                                Box(modifier = Modifier.padding(16.dp)) {
+                                Box(modifier = Modifier.padding(Spacing.lg)) {
                                     Column {
                                         Box(
                                             modifier = Modifier
-                                                .size(40.dp)
+                                                .size(AvatarSize.xl)
                                                 .background(AmberLight, CircleShape),
                                             contentAlignment = Alignment.Center
                                         ) {
@@ -460,10 +459,10 @@ fun DashboardScreen(
                                                 Icons.Filled.WbSunny,
                                                 contentDescription = null,
                                                 tint = AmberAccent,
-                                                modifier = Modifier.size(22.dp)
+                                                modifier = Modifier.size(IconSize.xl)
                                             )
                                         }
-                                        Spacer(Modifier.height(10.dp))
+                                        Spacer(Modifier.height(Spacing.md))
                                         Text(
                                             text = "Alumbrado",
                                             style = MaterialTheme.typography.labelMedium,
@@ -481,7 +480,7 @@ fun DashboardScreen(
                                             style = MaterialTheme.typography.labelSmall,
                                             color = TextSecondary
                                         )
-                                        Spacer(Modifier.height(10.dp))
+                                        Spacer(Modifier.height(Spacing.md))
                                         Row(modifier = Modifier.fillMaxWidth()) {
                                             Text(
                                                 text = "Sensor LDR",
@@ -512,26 +511,27 @@ fun DashboardScreen(
             item {
                 AnimatedVisibility(
                     visible = visible,
-                    enter = fadeIn(tween(420, delayMillis = 400)) + slideInVertically(tween(420, delayMillis = 400)) { it / 3 }
+                    enter = fadeIn(tween(Motion.durationDisplay, delayMillis = 400)) + slideInVertically(tween(Motion.durationDisplay, delayMillis = 400)) { it / 3 }
                 ) {
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 20.dp)
-                            .border(1.dp, DividerColor, RoundedCornerShape(24.dp))
+                            .padding(horizontal = Spacing.xl)
+                            .border(BorderWidth.thin, DividerColor, RoundedCornerShape(Radius.xxl))
+                            .interactiveSurface()
                             .clickable { navController.navigate(Screen.Alertas.route) },
-                        shape = RoundedCornerShape(24.dp),
-                        colors = CardDefaults.cardColors(containerColor = SurfaceElevated),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                        shape = RoundedCornerShape(Radius.xxl),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+                        elevation = CardDefaults.cardElevation(defaultElevation = Elevation.md)
                     ) {
                         Column {
                             Row(
-                                modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp),
+                                modifier = Modifier.padding(horizontal = Spacing.xl, vertical = Spacing.lg),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Box(
                                     modifier = Modifier
-                                        .size(36.dp)
+                                        .size(AvatarSize.md)
                                         .background(AmberAccent.copy(alpha = 0.15f), CircleShape),
                                     contentAlignment = Alignment.Center
                                 ) {
@@ -539,10 +539,10 @@ fun DashboardScreen(
                                         imageVector = Icons.Filled.Warning,
                                         contentDescription = null,
                                         tint = AmberAccent,
-                                        modifier = Modifier.size(18.dp)
+                                        modifier = Modifier.size(IconSize.md)
                                     )
                                 }
-                                Spacer(Modifier.width(14.dp))
+                                Spacer(Modifier.width(Spacing.md))
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
                                         text = "Alertas activas",
@@ -560,9 +560,9 @@ fun DashboardScreen(
                             }
                             Row(
                                 modifier = Modifier
-                                    .padding(horizontal = 20.dp)
-                                    .padding(bottom = 14.dp),
-                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                    .padding(horizontal = Spacing.xl)
+                                    .padding(bottom = Spacing.md),
+                                horizontalArrangement = Arrangement.spacedBy(Spacing.md)
                             ) {
                                 if (alertasCriticas > 0) {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -571,7 +571,7 @@ fun DashboardScreen(
                                                 .size(8.dp)
                                                 .background(StatusRed, CircleShape)
                                         )
-                                        Spacer(Modifier.width(4.dp))
+                                        Spacer(Modifier.width(Spacing.xs))
                                         Text(
                                             text = "$alertasCriticas Crítica${if (alertasCriticas > 1) "s" else ""}",
                                             style = MaterialTheme.typography.bodySmall,
@@ -587,7 +587,7 @@ fun DashboardScreen(
                                                 .size(8.dp)
                                                 .background(AmberAccent, CircleShape)
                                         )
-                                        Spacer(Modifier.width(4.dp))
+                                        Spacer(Modifier.width(Spacing.xs))
                                         Text(
                                             text = "$alertasAdvert Advertencia${if (alertasAdvert > 1) "s" else ""}",
                                             style = MaterialTheme.typography.bodySmall,
@@ -606,12 +606,12 @@ fun DashboardScreen(
             item {
                 AnimatedVisibility(
                     visible = visible,
-                    enter = fadeIn(tween(400, delayMillis = 480))
+                    enter = fadeIn(tween(Motion.durationNormal, delayMillis = 480))
                 ) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 20.dp),
+                            .padding(horizontal = Spacing.xl),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -626,9 +626,11 @@ fun DashboardScreen(
                             style = MaterialTheme.typography.labelMedium,
                             color = CityGridPrimary,
                             fontWeight = FontWeight.SemiBold,
-                            modifier = Modifier.clickable {
-                                navController.navigate(Screen.Alertas.route)
-                            }
+                            modifier = Modifier
+                                .interactiveSurface()
+                                .clickable {
+                                    navController.navigate(Screen.Alertas.route)
+                                }
                         )
                     }
                 }
@@ -647,11 +649,11 @@ fun DashboardScreen(
                 items(alertasRecientes) { alerta ->
                     AnimatedVisibility(
                         visible = visible,
-                        enter = fadeIn(tween(400, delayMillis = 560)) + slideInVertically(tween(400, delayMillis = 560)) { it / 4 }
+                        enter = fadeIn(tween(Motion.durationNormal, delayMillis = 560)) + slideInVertically(tween(Motion.durationNormal, delayMillis = 560)) { it / 4 }
                     ) {
                         AlertItemCard(
                             alerta = alerta,
-                            modifier = Modifier.padding(horizontal = 20.dp)
+                            modifier = Modifier.padding(horizontal = Spacing.xl)
                         )
                     }
                 }
@@ -677,22 +679,22 @@ private fun AccesoRapidoItem(
     ) {
         Box(
             modifier = Modifier
-                .size(64.dp)
+                .size(AvatarSize.hero)
                 .shadow(
-                    elevation = 4.dp,
-                    shape = RoundedCornerShape(24.dp),
+                    elevation = Elevation.lg,
+                    shape = RoundedCornerShape(Radius.xxl),
                     ambientColor = iconColor.copy(alpha = 0.2f),
                     spotColor = iconColor.copy(alpha = 0.2f)
                 )
-                .background(backgroundColor, RoundedCornerShape(24.dp))
-                .border(1.dp, DividerColor, RoundedCornerShape(24.dp)),
+                .background(backgroundColor, RoundedCornerShape(Radius.xxl))
+                .border(BorderWidth.thin, DividerColor, RoundedCornerShape(Radius.xxl)),
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = label,
                 tint = iconColor,
-                modifier = Modifier.size(30.dp)
+                modifier = Modifier.size(IconSize.display)
             )
         }
         Spacer(Modifier.height(6.dp))

@@ -47,9 +47,11 @@ class MainActivity : ComponentActivity() {
             val currentRoute = navBackStackEntry?.destination?.route
             val onLogin = currentRoute == Screen.Login.route
 
-            val alertasCount by MqttManager.alertasFlow
-                .collectAsState()
+            val alertasCount by MqttManager.alertasFlow.collectAsState()
             val alertasPendientes = alertasCount.count { !it.atendida }
+
+            val connectionState by MqttManager.connectionState.collectAsState()
+            val latenciaMs by MqttManager.latenciaMs.collectAsState()
 
             CityGridTheme(darkTheme = sessionManager.isTemaOscuro()) {
                 Scaffold(
@@ -59,6 +61,8 @@ class MainActivity : ComponentActivity() {
                         if (!onLogin) {
                             BloqueEncabezado(
                                 alertasPendientes = alertasPendientes,
+                                connectionState = connectionState,
+                                latenciaMs = latenciaMs,
                                 onLogoutClick = {
                                     sessionManager.cerrarSesion()
                                     navController.navigate(Screen.Login.route) {
@@ -83,6 +87,7 @@ class MainActivity : ComponentActivity() {
                     bottomBar = {
                         if (!onLogin) {
                             BarraNavegacionInferiorCompartida(
+
                                 navController = navController,
                                 currentRoute = currentRoute
                             )

@@ -36,7 +36,6 @@ import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Date
 import com.example.citygrid.ui.theme.SurfaceCard
-import com.example.citygrid.ui.theme.SurfaceElevated
 import com.example.citygrid.ui.theme.DividerColor
 import com.example.citygrid.ui.theme.TextSecondary
 import com.example.citygrid.ui.theme.TextPrimary
@@ -46,7 +45,12 @@ import com.example.citygrid.ui.theme.CityGridPrimaryLight
 import com.example.citygrid.ui.theme.StatusGreen
 import com.example.citygrid.ui.theme.StatusBlue
 import com.example.citygrid.ui.theme.StatusRed
-import com.example.citygrid.ui.theme.BackgroundLight
+import com.example.citygrid.ui.theme.GradientNavyEnd
+import com.example.citygrid.ui.theme.brandGradient
+import com.example.citygrid.ui.theme.BorderWidth
+import com.example.citygrid.ui.theme.Radius
+import com.example.citygrid.ui.theme.Spacing
+import com.example.citygrid.ui.theme.Elevation
 
 // NOTA: ColorPrincipal, ColorNocheLuna, etc. eliminadas del top-level para evitar conflictos.
 // Se usan directamente los tokens de Color.kt.
@@ -71,14 +75,14 @@ fun MantenimientoScreen() {
     LaunchedEffect(Unit) { visible = true }
 
     Scaffold(
-        containerColor = BackgroundLight,
+        containerColor = MaterialTheme.colorScheme.background,
         contentWindowInsets = WindowInsets(0.dp),
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { mostrarFormulario = true },
                 containerColor = CityGridPrimary,
                 contentColor = Color.White,
-                shape = RoundedCornerShape(18.dp),
+                shape = RoundedCornerShape(Radius.lg),
                 modifier = Modifier.padding(bottom = 80.dp, end = 8.dp)
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Añadir Mantenimiento")
@@ -117,13 +121,10 @@ fun MantenimientoScreen() {
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(
-                            Brush.linearGradient(
-                                colors = listOf(CityGridPrimaryDark, Color(0xFF0A3D62), Color(0xFF0D5A8C))
-                            ),
-                            RoundedCornerShape(22.dp)
+                            Brush.linearGradient(colors = brandGradient()),
+                            RoundedCornerShape(Radius.lg)
                         )
-                        .border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(22.dp))
-                        .padding(20.dp)
+                        .padding(Spacing.xl)
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -170,10 +171,10 @@ fun MantenimientoScreen() {
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .border(1.dp, DividerColor, RoundedCornerShape(24.dp)),
-                            shape = RoundedCornerShape(24.dp),
-                            colors = CardDefaults.cardColors(containerColor = SurfaceElevated),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                                .border(BorderWidth.thin, DividerColor, RoundedCornerShape(Radius.lg)),
+                            shape = RoundedCornerShape(Radius.lg),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                            elevation = CardDefaults.cardElevation(defaultElevation = Elevation.sm)
                         ) {
                             Column(modifier = Modifier.padding(16.dp)) {
                                 Row(
@@ -231,7 +232,7 @@ fun MantenimientoScreen() {
         if (mostrarFormulario) {
             ModalBottomSheet(
                 onDismissRequest = { mostrarFormulario = false },
-                containerColor = Color.White,
+                containerColor = MaterialTheme.colorScheme.surface,
                 dragHandle = null,
                 modifier = Modifier.fillMaxHeight(0.95f)
             ) {
@@ -254,10 +255,10 @@ fun TarjetaHistorialMantenimiento(mantenimiento: DbMantenimiento, responsable: S
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .border(1.dp, DividerColor, RoundedCornerShape(24.dp)),
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = SurfaceElevated),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            .border(BorderWidth.thin, DividerColor, RoundedCornerShape(Radius.lg)),
+        shape = RoundedCornerShape(Radius.lg),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = Elevation.sm)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
@@ -362,7 +363,7 @@ fun FormularioMantenimientoFigma(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(
-                    Brush.linearGradient(colors = listOf(CityGridPrimaryDark, Color(0xFF0A3D62)))
+                    Brush.linearGradient(colors = listOf(CityGridPrimaryDark, GradientNavyEnd))
                 )
                 .padding(vertical = 18.dp),
             contentAlignment = Alignment.Center
@@ -481,7 +482,7 @@ fun FormularioMantenimientoFigma(
                 },
                 modifier = Modifier.fillMaxWidth().height(52.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = CityGridPrimary),
-                shape = RoundedCornerShape(16.dp)
+                shape = RoundedCornerShape(Radius.lg)
             ) {
                 Text("Guardar Registro", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.White)
             }

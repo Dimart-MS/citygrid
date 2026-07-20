@@ -18,6 +18,11 @@ import com.example.citygrid.utils.AlertaHelper
 import com.example.citygrid.utils.Constants
 import com.example.citygrid.utils.Logger
 import com.example.citygrid.utils.NotificationHelper
+import com.example.citygrid.data.local.db.CityGridDatabase
+import com.example.citygrid.data.local.db.entity.AguaEntity
+import com.example.citygrid.data.local.db.entity.AlertaEntity
+import com.example.citygrid.data.local.db.entity.AlumbradoEntity
+import com.example.citygrid.data.local.db.entity.ResiduosEntity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -32,6 +37,13 @@ import org.eclipse.paho.client.mqttv3.*
 import java.util.UUID
 import com.example.citygrid.data.SupabaseManager
 import io.github.jan.supabase.realtime.realtime
+
+enum class MqttConnectionState {
+    DISCONNECTED,
+    CONNECTING,
+    CONNECTED,
+    DEVICE_OFFLINE
+}
 
 object MqttManager {
 
@@ -73,23 +85,177 @@ object MqttManager {
     private val _statusFlow = MutableStateFlow(com.example.citygrid.model.StatusState())
     val statusFlow: StateFlow<com.example.citygrid.model.StatusState> = _statusFlow.asStateFlow()
 
+    // Flujo de estado de conexión MQTT y Latencia en vivo
+    private val _connectionState = MutableStateFlow(MqttConnectionState.DISCONNECTED)
+    val connectionState: StateFlow<MqttConnectionState> = _connectionState.asStateFlow()
+
+    private val _latenciaMs = MutableStateFlow(0L)
+    val latenciaMs: StateFlow<Long> = _latenciaMs.asStateFlow()
+
+    private var lastMessageTimeMs = 0L
+    private var dbInstance: CityGridDatabase? = null
+
     // Métodos públicos para permitir a los procesadores actualizar el estado
     fun updateResiduosState(state: ResiduosState) {
         _residuosFlow.value = state
+        dbInstance?.let { db ->
+            scope.launch {
+                try {
+                    val entities = state.contenedores.map {
+                        ResiduosEntity(
+                            tipo = it.tipo,
+                            nombre = it.nombre,
+                            porcentaje = it.porcentaje,
+                            ultimaActualizacion = it.ultimaActualizacion
+                        )
+                    }
+                    db.residuosDao().insertarOActualizar(entities)
+                } catch (e: Exception) {
+                    Logger.e("MqttManager", "Error al guardar residuos en Room DB", e)
+                }
+            }
+        }
     }
 
     fun updateAguaState(state: AguaState) {
         _aguaFlow.value = state
+        dbInstance?.let { db ->
+            scope.launch {
+                try {
+                    db.aguaDao().guardarAgua(
+                        AguaEntity(
+                            id = 1,
+                            nivelTanque = state.nivelTanque,
+                            bombaActiva = state.bombaActiva,
+                            estadoGeneral = state.estadoGeneral,
+                            ultimaActualizacion = state.ultimaActualizacion,
+                            conectado = state.conectado
+                        )
+                    )
+                } catch (e: Exception) {
+                    Logger.e("MqttManager", "Error al guardar agua en Room DB", e)
+                }
+            }
+        }
     }
 
     fun updateAlumbradoState(state: AlumbradoState) {
         _alumbradoFlow.value = state
+        dbInstance?.let { db ->
+            scope.launch {
+                try {
+                    db.alumbradoDao().guardarAlumbrado(
+                        AlumbradoEntity(
+                            id = 1,
+                            estadoOn = state.estadoOn,
+                            condicionNoche = state.condicionNoche,
+                            ldrLux = state.ldrLux,
+                            luminariasActivas = state.luminariasActivas,
+                            modo = state.modo,
+                            ultimaActualizacion = state.ultimaActualizacion,
+                            conectado = state.conectado
+                        )
+                    )
+                } catch (e: Exception) {
+                    Logger.e("MqttManager", "Error al guardar alumbrado en Room DB", e)
+                }
+            }
+        }
     }
 
     fun addMqttAlerta(alerta: Alerta) {
         val listaActual = _alertasFlow.value.toMutableList()
         listaActual.add(0, alerta)
         _alertasFlow.value = listaActual.take(20)
+        dbInstance?.let { db ->
+            scope.launch {
+                try {
+                    db.alertaDao().guardarAlerta(
+                        AlertaEntity(
+                            id = alerta.id,
+                            tipoName = alerta.tipo.name,
+                            titulo = alerta.titulo,
+                            descripcion = alerta.descripcion,
+                            sistema = alerta.sistema,
+                            timestamp = alerta.timestamp,
+                            atendida = alerta.atendida
+                        )
+                    )
+                } catch (e: Exception) {
+                    Logger.e("MqttManager", "Error al guardar alerta en Room DB", e)
+                }
+            }
+        }
+    }
+
+    private fun initRoomDatabase(context: Context) {
+        if (dbInstance == null) {
+            val db = CityGridDatabase.getInstance(context)
+            dbInstance = db
+            scope.launch {
+                try {
+                    val cachedResiduos = db.residuosDao().obtenerTodosList()
+                    if (cachedResiduos.isNotEmpty()) {
+                        val contenedores = cachedResiduos.map {
+                            ContenedorData(
+                                nombre = it.nombre,
+                                tipo = it.tipo,
+                                porcentaje = it.porcentaje,
+                                ultimaActualizacion = it.ultimaActualizacion
+                            )
+                        }
+                        _residuosFlow.value = _residuosFlow.value.copy(contenedores = contenedores)
+                    }
+
+                    val cachedAgua = db.aguaDao().obtenerAgua()
+                    if (cachedAgua != null) {
+                        _aguaFlow.value = AguaState(
+                            nivelTanque = cachedAgua.nivelTanque,
+                            bombaActiva = cachedAgua.bombaActiva,
+                            estadoGeneral = cachedAgua.estadoGeneral,
+                            ultimaActualizacion = cachedAgua.ultimaActualizacion,
+                            conectado = cachedAgua.conectado
+                        )
+                    }
+
+                    val cachedAlumbrado = db.alumbradoDao().obtenerAlumbrado()
+                    if (cachedAlumbrado != null) {
+                        _alumbradoFlow.value = AlumbradoState(
+                            estadoOn = cachedAlumbrado.estadoOn,
+                            condicionNoche = cachedAlumbrado.condicionNoche,
+                            ldrLux = cachedAlumbrado.ldrLux,
+                            luminariasActivas = cachedAlumbrado.luminariasActivas,
+                            modo = cachedAlumbrado.modo,
+                            ultimaActualizacion = cachedAlumbrado.ultimaActualizacion,
+                            conectado = cachedAlumbrado.conectado
+                        )
+                    }
+
+                    val cachedAlertas = db.alertaDao().obtenerAlertas()
+                    if (cachedAlertas.isNotEmpty()) {
+                        val alertas = cachedAlertas.map { entity ->
+                            val tipoParsed = try {
+                                com.example.citygrid.model.TipoAlerta.valueOf(entity.tipoName)
+                            } catch (e: Exception) {
+                                com.example.citygrid.model.TipoAlerta.INFORMACION
+                            }
+                            Alerta(
+                                id = entity.id,
+                                tipo = tipoParsed,
+                                titulo = entity.titulo,
+                                descripcion = entity.descripcion,
+                                sistema = entity.sistema,
+                                timestamp = entity.timestamp,
+                                atendida = entity.atendida
+                            )
+                        }
+                        _alertasFlow.value = alertas
+                    }
+                } catch (e: Exception) {
+                    Logger.e("MqttManager", "Error al cargar Room DB cache", e)
+                }
+            }
+        }
     }
 
     // Variables de monitoreo de inactividad / fuera de línea y Supabase Realtime
@@ -120,6 +286,8 @@ object MqttManager {
     // alertasReportadas movido a AlertaHelper centralizado
 
     fun connect(context: Context) {
+        initRoomDatabase(context)
+
         // Cargar últimos registros históricos de Supabase solo una vez al inicio
         synchronized(this) {
             if (!lecturasInicialesCargadas) {
@@ -128,11 +296,15 @@ object MqttManager {
             }
         }
 
-        if (client != null && client!!.isConnected) return
+        if (client != null && client!!.isConnected) {
+            _connectionState.value = MqttConnectionState.CONNECTED
+            return
+        }
         synchronized(this) {
             if (isConnecting) return
             isConnecting = true
         }
+        _connectionState.value = MqttConnectionState.CONNECTING
 
         try {
             if (client == null) {
@@ -146,6 +318,7 @@ object MqttManager {
                             isConnecting = false
                             retryJob?.cancel()
                         }
+                        _connectionState.value = MqttConnectionState.CONNECTED
                         _residuosFlow.value = _residuosFlow.value.copy(conectado = true)
                         _aguaFlow.value = _aguaFlow.value.copy(conectado = true)
                         _alumbradoFlow.value = _alumbradoFlow.value.copy(conectado = true)
@@ -166,12 +339,22 @@ object MqttManager {
                         synchronized(this@MqttManager) {
                             isConnecting = false
                         }
+                        _connectionState.value = MqttConnectionState.DISCONNECTED
                         _residuosFlow.value = _residuosFlow.value.copy(conectado = false)
                         _aguaFlow.value = _aguaFlow.value.copy(conectado = false)
                         _alumbradoFlow.value = _alumbradoFlow.value.copy(conectado = false)
                     }
 
                     override fun messageArrived(topic: String, message: MqttMessage) {
+                        val now = System.currentTimeMillis()
+                        if (lastMessageTimeMs > 0) {
+                            val delta = now - lastMessageTimeMs
+                            if (delta in 5..30000) {
+                                _latenciaMs.value = delta
+                            }
+                        }
+                        lastMessageTimeMs = now
+
                         val payload = String(message.payload)
                         Logger.d("MqttManager", "Mensaje recibido en $topic: $payload")
 
@@ -194,6 +377,7 @@ object MqttManager {
             synchronized(this) {
                 isConnecting = false
             }
+            _connectionState.value = MqttConnectionState.DISCONNECTED
             reintentarConexion(context)
             return
         }
@@ -344,6 +528,7 @@ object MqttManager {
                 val tiempoInactivo = System.currentTimeMillis() - ultimoMensajeBasuraTimestamp
                 if (esSistemaOnline && tiempoInactivo > 120000) { // Mayor a 2 minutos sin recibir ningún dato
                     esSistemaOnline = false
+                    _connectionState.value = MqttConnectionState.DEVICE_OFFLINE
 
                     // 1. Mostrar notificación de caída
                     NotificationHelper.enviarNotificacion(
@@ -380,6 +565,7 @@ object MqttManager {
         _residuosFlow.value = _residuosFlow.value.copy(ultimoMensajeTimestamp = ultimoMensajeBasuraTimestamp)
         if (!esSistemaOnline) {
             esSistemaOnline = true
+            _connectionState.value = MqttConnectionState.CONNECTED
 
             // 1. Notificar recuperación de conexión
             NotificationHelper.enviarNotificacion(
@@ -403,6 +589,8 @@ object MqttManager {
 
             if (status.estado.equals("OFFLINE", ignoreCase = true)) {
                 Logger.w("MqttManager", "Dispositivo ESP32 reportó desconexión abrupta (LWT)")
+                esSistemaOnline = false
+                _connectionState.value = MqttConnectionState.DEVICE_OFFLINE
 
                 // Actualizar flujos para mostrar desconexión en la interfaz
                 val resState = _residuosFlow.value

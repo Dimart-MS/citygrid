@@ -14,9 +14,14 @@ import androidx.compose.ui.unit.sp
 import com.example.citygrid.ui.theme.AmberAccent
 import com.example.citygrid.ui.theme.AmberDark
 import com.example.citygrid.ui.theme.AmberLight
+import com.example.citygrid.ui.theme.DividerColor
 import com.example.citygrid.ui.theme.StatusBlue
 import com.example.citygrid.ui.theme.StatusGreen
 import com.example.citygrid.ui.theme.StatusRed
+import com.example.citygrid.ui.theme.TextSecondary
+import com.example.citygrid.ui.theme.TextTertiary
+import com.example.citygrid.ui.theme.Radius
+import com.example.citygrid.ui.theme.Spacing
 
 /**
  * Badge de estado de sensor/sistema — CityGrid v2.
@@ -38,21 +43,21 @@ fun StatusBadge(
 
     val (bgColor, textColor) = when (normalized) {
         "LLENO", "CRITICO" ->
-            StatusRed.copy(alpha = 0.12f) to StatusRed
+            StatusRed.copy(alpha = 0.10f) to StatusRed
         "DESCONECTADO", "INACTIVO" ->
-            Color.Gray.copy(alpha = 0.12f) to Color.Gray
+            TextTertiary.copy(alpha = 0.12f) to TextSecondary
         "MEDIO", "ADVERTENCIA" ->
             AmberLight to AmberDark
         "VACIO", "NORMAL", "OPERANDO", "ACTIVO" ->
-            StatusGreen.copy(alpha = 0.12f) to StatusGreen
+            StatusGreen.copy(alpha = 0.10f) to StatusGreen
         "INFORMACION", "AUTO" ->
-            StatusBlue.copy(alpha = 0.12f) to StatusBlue
+            StatusBlue.copy(alpha = 0.10f) to StatusBlue
         else ->
-            Color.LightGray.copy(alpha = 0.25f) to Color.Gray
+            DividerColor to TextSecondary
     }
 
     Surface(
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(Radius.md),
         color = bgColor,
         modifier = modifier
     ) {
@@ -62,7 +67,7 @@ fun StatusBadge(
             fontSize = 10.sp,
             fontWeight = FontWeight.Bold,
             letterSpacing = 0.6.sp,
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp)
+            modifier = Modifier.padding(horizontal = Spacing.md, vertical = 5.dp)
         )
     }
 }

@@ -36,7 +36,6 @@ import com.example.citygrid.ui.components.tiempoRelativo
 import com.example.citygrid.ui.theme.AmberAccent
 import com.example.citygrid.ui.theme.AmberDark
 import com.example.citygrid.ui.theme.AmberLight
-import com.example.citygrid.ui.theme.BackgroundLight
 import com.example.citygrid.ui.theme.CityGridPrimary
 import com.example.citygrid.ui.theme.CityGridPrimaryDark
 import com.example.citygrid.ui.theme.CityGridPrimaryLight
@@ -44,9 +43,13 @@ import com.example.citygrid.ui.theme.DividerColor
 import com.example.citygrid.ui.theme.StatusBlue
 import com.example.citygrid.ui.theme.StatusGreen
 import com.example.citygrid.ui.theme.StatusRed
-import com.example.citygrid.ui.theme.SurfaceElevated
 import com.example.citygrid.ui.theme.TextPrimary
 import com.example.citygrid.ui.theme.TextSecondary
+import com.example.citygrid.ui.theme.brandGradient
+import com.example.citygrid.ui.theme.BorderWidth
+import com.example.citygrid.ui.theme.Radius
+import com.example.citygrid.ui.theme.Spacing
+import com.example.citygrid.ui.theme.Elevation
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -97,7 +100,7 @@ fun AlertasScreen() {
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .background(BackgroundLight),
+            .background(MaterialTheme.colorScheme.background),
         contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 8.dp, bottom = 110.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
@@ -226,13 +229,10 @@ fun BannerEstadoAlertas(criticalCount: Int = 0, warningCount: Int = 0) {
         modifier = Modifier
             .fillMaxWidth()
             .background(
-                Brush.linearGradient(
-                    colors = listOf(CityGridPrimaryDark, Color(0xFF0A3D62), Color(0xFF0D5A8C))
-                ),
-                RoundedCornerShape(22.dp)
+                Brush.linearGradient(colors = brandGradient()),
+                RoundedCornerShape(Radius.lg)
             )
-            .border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(22.dp))
-            .padding(20.dp)
+            .padding(Spacing.xl)
     ) {
         Column {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -269,12 +269,12 @@ fun TarjetaResumenAlertas(criticalCount: Int, warningCount: Int) {
     val totalActivas = criticalCount + warningCount
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(22.dp),
-        colors = CardDefaults.cardColors(containerColor = SurfaceElevated),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        shape = RoundedCornerShape(Radius.lg),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = Elevation.sm)
     ) {
         Row(
-            modifier = Modifier.padding(20.dp),
+            modifier = Modifier.padding(Spacing.xl),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
@@ -429,9 +429,9 @@ fun TarjetaAlerta(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() },
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = SurfaceElevated),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        shape = RoundedCornerShape(Radius.xl),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+        elevation = CardDefaults.cardElevation(defaultElevation = Elevation.md)
     ) {
         Row(modifier = Modifier.height(IntrinsicSize.Min)) {
             // Borde izquierdo semántico
@@ -441,7 +441,7 @@ fun TarjetaAlerta(
                     .width(5.dp)
                     .background(
                         severityColor,
-                        RoundedCornerShape(topStart = 20.dp, bottomStart = 20.dp)
+                        RoundedCornerShape(topStart = Radius.xl, bottomStart = Radius.xl)
                     )
             )
             Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp)) {

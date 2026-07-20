@@ -44,9 +44,9 @@ fun ConfiguracionScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(BackgroundLight)
+            .background(MaterialTheme.colorScheme.background)
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = 20.dp),
+            .padding(horizontal = Spacing.xl),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Spacer(modifier = Modifier.height(8.dp))
@@ -72,15 +72,15 @@ fun ConfiguracionScreen(
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(1.dp, DividerColor, RoundedCornerShape(24.dp)),
-                shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = SurfaceElevated),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    .border(BorderWidth.thin, DividerColor, RoundedCornerShape(Radius.lg)),
+                shape = RoundedCornerShape(Radius.lg),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                elevation = CardDefaults.cardElevation(defaultElevation = Elevation.sm)
             ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(20.dp),
+                        .padding(Spacing.xl),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Box(
@@ -130,12 +130,12 @@ fun ConfiguracionScreen(
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(1.dp, DividerColor, RoundedCornerShape(24.dp)),
-                shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = SurfaceElevated),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    .border(BorderWidth.thin, DividerColor, RoundedCornerShape(Radius.lg)),
+                shape = RoundedCornerShape(Radius.lg),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                elevation = CardDefaults.cardElevation(defaultElevation = Elevation.sm)
             ) {
-                Column(modifier = Modifier.padding(20.dp)) {
+                Column(modifier = Modifier.padding(Spacing.xl)) {
                     Text(
                         text = "APARIENCIA",
                         style = MaterialTheme.typography.labelSmall,
@@ -174,12 +174,12 @@ fun ConfiguracionScreen(
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(1.dp, DividerColor, RoundedCornerShape(24.dp)),
-                shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = SurfaceElevated),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    .border(BorderWidth.thin, DividerColor, RoundedCornerShape(Radius.lg)),
+                shape = RoundedCornerShape(Radius.lg),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                elevation = CardDefaults.cardElevation(defaultElevation = Elevation.sm)
             ) {
-                Column(modifier = Modifier.padding(20.dp)) {
+                Column(modifier = Modifier.padding(Spacing.xl)) {
                     Text(
                         text = "ACERCA DE",
                         style = MaterialTheme.typography.labelSmall,
@@ -264,9 +264,9 @@ fun ConfiguracionScreen(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(24.dp))
-                    .background(StatusRed.copy(alpha = 0.08f))
-                    .border(1.dp, StatusRed.copy(alpha = 0.2f), RoundedCornerShape(24.dp))
+                    .clip(RoundedCornerShape(Radius.lg))
+                    .background(StatusRed.copy(alpha = 0.06f))
+                    .border(BorderWidth.thin, StatusRed.copy(alpha = 0.15f), RoundedCornerShape(Radius.lg))
                     .clickable { showConfirm = true }
                     .padding(18.dp),
                 contentAlignment = Alignment.Center

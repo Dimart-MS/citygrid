@@ -47,8 +47,12 @@ import com.example.citygrid.data.SessionManager
 import com.example.citygrid.data.repository.UsuarioRepository
 import com.example.citygrid.ui.theme.CityGridPrimary
 import com.example.citygrid.ui.theme.CityGridPrimaryDark
+import com.example.citygrid.ui.theme.CityGridPrimaryMid
 import com.example.citygrid.ui.theme.SurfaceCard
 import com.example.citygrid.ui.theme.TextSecondary
+import com.example.citygrid.ui.theme.brandGradient
+import com.example.citygrid.ui.theme.Radius
+import com.example.citygrid.ui.theme.Spacing
 import kotlinx.coroutines.launch
 
 /**
@@ -95,13 +99,7 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
             modifier = Modifier
                 .fillMaxSize()
                 .background(
-                    Brush.linearGradient(
-                        colors = listOf(
-                            CityGridPrimaryDark,
-                            Color(0xFF0A3D62),
-                            Color(0xFF0D5A8C)
-                        )
-                    )
+                    Brush.linearGradient(colors = brandGradient())
                 )
         )
 
@@ -177,12 +175,12 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
             // ── Card del formulario ─────────────────────────────────────
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(24.dp),
+                shape = RoundedCornerShape(Radius.lg),
                 colors = CardDefaults.cardColors(containerColor = SurfaceCard),
-                elevation = CardDefaults.cardElevation(defaultElevation = 24.dp)
+                elevation = CardDefaults.cardElevation(defaultElevation = 12.dp)
             ) {
                 Column(
-                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 28.dp)
+                    modifier = Modifier.padding(horizontal = Spacing.xxl, vertical = Spacing.xxxl)
                 ) {
                     Text(
                         text = "Inicio de sesión",
@@ -220,10 +218,10 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
                             onNext = { keyboardController?.hide() }
                         ),
                         singleLine = true,
-                        shape = RoundedCornerShape(16.dp)
+                        shape = RoundedCornerShape(Radius.lg)
                     )
 
-                    Spacer(Modifier.height(16.dp))
+                    Spacer(Modifier.height(Spacing.lg))
 
                     // Campo contraseña
                     OutlinedTextField(
@@ -259,7 +257,7 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
                             onDone = { keyboardController?.hide() }
                         ),
                         singleLine = true,
-                        shape = RoundedCornerShape(16.dp)
+                        shape = RoundedCornerShape(Radius.lg)
                     )
 
                     // Olvidé mi contraseña
@@ -283,9 +281,9 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
                                 .fillMaxWidth()
                                 .background(
                                     MaterialTheme.colorScheme.errorContainer,
-                                    RoundedCornerShape(12.dp)
+                                    RoundedCornerShape(Radius.md)
                                 )
-                                .padding(12.dp)
+                                .padding(Spacing.md)
                         ) {
                             Text(
                                 text = errorMsg,
@@ -304,12 +302,12 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
                             .fillMaxWidth()
                             .height(54.dp)
                             .scale(buttonScale)
-                            .clip(RoundedCornerShape(16.dp))
+                            .clip(RoundedCornerShape(Radius.lg))
                             .background(
                                 Brush.horizontalGradient(
                                     colors = if (!isLoading) listOf(
                                         CityGridPrimary,
-                                        Color(0xFF0369A1)
+                                        CityGridPrimaryMid
                                     ) else listOf(
                                         Color.Gray.copy(alpha = 0.4f),
                                         Color.Gray.copy(alpha = 0.4f)

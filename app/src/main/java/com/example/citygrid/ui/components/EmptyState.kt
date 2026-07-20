@@ -32,6 +32,9 @@ import com.example.citygrid.ui.theme.CityGridPrimary
 import com.example.citygrid.ui.theme.CityGridPrimaryLight
 import com.example.citygrid.ui.theme.TextPrimary
 import com.example.citygrid.ui.theme.TextSecondary
+import com.example.citygrid.ui.theme.Spacing
+import com.example.citygrid.ui.theme.IconSize
+import com.example.citygrid.ui.theme.Motion
 
 /**
  * Estado vacío animado y reutilizable para todas las pantallas de la app.
@@ -54,7 +57,7 @@ fun EmptyState(
         initialValue = 0.95f,
         targetValue = 1.05f,
         animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1800),
+            animation = tween(durationMillis = Motion.durationHero),
             repeatMode = RepeatMode.Reverse
         ),
         label = "pulseScale"
@@ -63,7 +66,7 @@ fun EmptyState(
         initialValue = 0.10f,
         targetValue = 0.25f,
         animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1800),
+            animation = tween(durationMillis = Motion.durationHero),
             repeatMode = RepeatMode.Reverse
         ),
         label = "haloAlpha"
@@ -72,7 +75,7 @@ fun EmptyState(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .padding(vertical = 40.dp, horizontal = 24.dp),
+            .padding(vertical = Spacing.display, horizontal = Spacing.xxl),
         contentAlignment = Alignment.Center
     ) {
         Column(
@@ -101,12 +104,12 @@ fun EmptyState(
                         imageVector = icon,
                         contentDescription = null,
                         tint = CityGridPrimary,
-                        modifier = Modifier.size(40.dp)
+                        modifier = Modifier.size(IconSize.display)
                     )
                 }
             }
 
-            Spacer(Modifier.height(20.dp))
+            Spacer(Modifier.height(Spacing.xl))
 
             Text(
                 text = titulo,
@@ -123,12 +126,12 @@ fun EmptyState(
                     style = MaterialTheme.typography.bodyMedium,
                     color = TextSecondary,
                     textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(horizontal = 8.dp)
+                    modifier = Modifier.padding(horizontal = Spacing.sm)
                 )
             }
 
             if (accion != null) {
-                Spacer(Modifier.height(20.dp))
+                Spacer(Modifier.height(Spacing.xl))
                 accion()
             }
         }
